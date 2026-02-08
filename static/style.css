@@ -58,7 +58,8 @@ body::before {
 }
 
 /* Auth & Brand */
-#login-screen {
+#login-screen,
+#pending-screen {
     justify-content: center;
     align-items: center;
 }

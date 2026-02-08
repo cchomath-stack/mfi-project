@@ -37,27 +37,25 @@ function initAuth() {
 
 async function checkAuth() {
     try {
-        // 서버에서 최신 유저 정보(is_approved 포함) 가져오기
-        const res = await fetch('/admin/stats', { // stats API가 auth 체크를 겸함
+        // 내 정보 및 승인 상태 확인 전용 API 호출
+        const res = await fetch('/me', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (res.ok) {
-            // 편의상 stats API의 응답과는 별개로 세션 정보를 위해 /me 엔드포인트가 있으면 좋으나 
-            // 현재는 stats가 200이면 승인된 상태로 간주 (403이면 미승인)
-            // 임시로 localStorage의 정보를 사용하거나 별도 API 호출 필요
-            // 여기서는 단순화를 위해 localStorage 사용 후 403 에러 시 처리
-            const userJson = localStorage.getItem('currentUser');
-            if (userJson) currentUser = JSON.parse(userJson);
+            currentUser = await res.json();
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
             showScreen('landing');
             updateUI();
         } else if (res.status === 403) {
-            // 승인 대기 상태
+            // 승인 대기 상태 (403 Forbidden)
             showScreen('pending');
         } else {
+            // 토큰 만료 또는 기타 오류 (401 등)
             logout();
         }
     } catch (e) {
+        console.error("Auth check failed:", e);
         logout();
     }
 }

@@ -228,7 +228,10 @@ async def google_callback(code: str):
     gid = google_user.get("id")
     email = google_user.get("email")
     picture = google_user.get("picture")
-    username = email.split("@")[0] # 기본 이메일 아이디 사용
+    username = email.split("@")[0]
+    # 만약 username이 admin이면 충돌 방지를 위해 뒤에 구글 ID 끝 4자리 붙임
+    if username == "admin":
+        username = f"admin_{gid[-4:]}"
     
     conn = get_sqlite_conn()
     row = conn.execute("SELECT id, is_approved FROM web_users WHERE google_id = ?", (gid,)).fetchone()
@@ -250,6 +253,11 @@ async def google_callback(code: str):
     
     # 클라이언트로 토큰과 함께 리다이렉트 (프론트엔드에서 처리)
     return RedirectResponse(url=f"/?token={token}")
+
+@app.get("/me")
+async def get_me(current_user: dict = Depends(get_current_user)):
+    # get_current_user에서 이미 is_approved 체크를 하므로 여기 도달하면 승인된 것임
+    return current_user
 
 # --- Admin User Management ---
 
