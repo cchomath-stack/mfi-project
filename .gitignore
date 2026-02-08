@@ -18,6 +18,5 @@ Thumbs.db
 
 # Backup files
 * copy.py
-*.txt
 *.sql
 *.bat
