@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Environment Variables
+.env
+
+# Database
+users.db
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+* copy.py
+*.txt
+*.sql
+*.bat

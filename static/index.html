@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFi - Premium Hybrid Search</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="dark-theme">
+    <div id="app">
+        <!-- 1. 로그인 화면 -->
+        <div id="login-screen" class="screen">
+            <div class="glass-card login-card">
+                <div class="brand-logo">
+                    <img src="/Mfi_logo.jpg" alt="MFi Logo" class="main-logo">
+                    <h1 class="brand-title">MFi</h1>
+                </div>
+                <p class="subtitle">MCAT_Find_image - AI 하이브리드 엔진</p>
+                <form id="login-form">
+                    <div class="input-group">
+                        <input type="text" id="username" placeholder="아이디" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="password" placeholder="비밀번호" required>
+                    </div>
+                    <button type="submit" class="btn-primary" id="login-btn">로그인</button>
+                    <div class="divider"><span>또는</span></div>
+                    <button type="button" class="btn-google" id="google-login-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G">
+                        Google로 계속하기
+                    </button>
+                    <div class="auth-notice mt-20">
+                        <p class="notice-title">💡 처음 방문하셨나요?</p>
+                        <p class="notice-text">구글 로그인 시 자동으로 가입 요청이 전송되며,<br><strong>관리자 승인 후</strong> 모든 기능을 이용할 수
+                            있습니다.</p>
+                    </div>
+                    <p id="login-error" class="error-msg"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- 1-1. 승인 대기 화면 -->
+        <div id="pending-screen" class="screen hidden">
+            <div class="glass-card login-card text-center">
+                <div class="icon-large">⏳</div>
+                <h2 class="mt-20">계정 승인 대기 중</h2>
+                <p>회원가입 요청이 접수되었습니다.<br>관리자의 승인 후 모든 기능을 이용하실 수 있습니다.</p>
+                <button id="pending-logout-btn" class="btn-secondary mt-20">로그아웃</button>
+            </div>
+        </div>
+
+        <!-- 2. 메인 랜딩 화면 -->
+        <div id="landing-screen" class="screen hidden">
+            <header class="navbar">
+                <div class="nav-brand">
+                    <img src="/Mfi_logo.jpg" alt="Logo" class="nav-logo-img">
+                    <span class="nav-logo-text">MFi (MCAT_Find_image)</span>
+                </div>
+                <div class="nav-links">
+                    <button id="logout-btn" class="nav-btn">로그아웃</button>
+                </div>
+            </header>
+            <main class="content central-content">
+                <div class="welcome-section">
+                    <h2>반갑습니다, <span id="user-display-name">사용자</span>님</h2>
+                    <p>수행하실 작업을 선택해주세요.</p>
+                </div>
+                <div class="choice-container">
+                    <div id="go-to-search" class="choice-card clickable">
+                        <div class="choice-icon">🔍</div>
+                        <h3>MCAT 문제 검색하기</h3>
+                        <p>CLIP + OCR 하이브리드 엔진을 통한 정확한 유사 문항 검색</p>
+                    </div>
+                    <div id="go-to-update" class="choice-card clickable admin-only hidden">
+                        <div class="choice-icon">🔄</div>
+                        <h3>MCAT 문제 이미지 업데이트하기</h3>
+                        <p>신규 문항의 임베딩 및 OCR 정보를 최신화합니다.</p>
+                    </div>
+                    <div id="go-to-user-mgmt" class="choice-card clickable admin-only hidden">
+                        <div class="choice-icon">👥</div>
+                        <h3>사용자 승인 및 관리</h3>
+                        <p>가입 요청을 승인하거나 사용자 권한을 관리합니다.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 3. 검색 화면 -->
+        <div id="search-screen" class="screen hidden">
+            <nav class="navbar">
+                <div class="nav-left">
+                    <button class="nav-btn back-btn" id="back-to-landing-from-search">← 뒤로가기</button>
+                    <div class="nav-brand">
+                        <img src="/Mfi_logo.jpg" alt="Logo" class="nav-logo-img">
+                        <span class="nav-logo-text">MFi Search</span>
+                    </div>
+                </div>
+                <div class="nav-links">
+                    <button id="search-logout-btn" class="nav-btn">로그아웃</button>
+                </div>
+            </nav>
+            <main class="content">
+                <section class="search-section">
+                    <div class="glass-card search-card">
+                        <div class="card-header">
+                            <h2>유사 문항 찾기</h2>
+                            <p>이미지로 검색하면 AI가 시각정보와 텍스트를 분석하여 유사 문항을 찾아줍니다.</p>
+                        </div>
+                        <div id="drop-zone" class="drop-zone">
+                            <div class="drop-zone-content">
+                                <span class="icon">📷</span>
+                                <p>이미지를 여기에 놓거나 Ctrl+V 하세요</p>
+                                <input type="file" id="file-input" class="hidden" accept="image/*">
+                            </div>
+                            <img id="preview-img" class="hidden">
+                        </div>
+                        <div class="action-bar">
+                            <button id="search-btn" class="btn-primary" disabled>유사 문항 검색</button>
+                        </div>
+                    </div>
+                </section>
+                <section id="results-section" class="results-section hidden">
+                    <div class="section-header">
+                        <h3>검색 결과 <span id="result-count">0</span>건</h3>
+                        <div class="search-tag">Hybrid AI Scoring</div>
+                    </div>
+                    <div id="results-grid" class="results-grid"></div>
+                </section>
+            </main>
+        </div>
+
+        <!-- 4. 업데이트 화면 (어드민) -->
+        <div id="update-screen" class="screen hidden">
+            <nav class="navbar">
+                <div class="nav-left">
+                    <button class="nav-btn back-btn" id="back-to-landing-from-update">← 뒤로가기</button>
+                    <div class="nav-brand">
+                        <img src="/Mfi_logo.jpg" alt="Logo" class="nav-logo-img">
+                        <span class="nav-logo-text">MFi Update</span>
+                    </div>
+                </div>
+                <div class="nav-links">
+                    <button id="update-logout-btn" class="nav-btn">로그아웃</button>
+                </div>
+            </nav>
+            <main class="content">
+                <div class="glass-card update-dashboard">
+                    <div class="update-header">
+                        <h2>이미지 임베딩 및 OCR 업데이트</h2>
+                        <p>PostgreSQL의 신규 등록 문항을 엔진에 실시간 반영합니다.</p>
+                    </div>
+                    <div class="stats-container">
+                        <div class="stat-item">
+                            <span class="stat-label">누적 임베딩/OCR 완료수</span>
+                            <span id="total-embeddings" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item highlight">
+                            <span class="stat-label">업데이트 대기 중</span>
+                            <span id="pending-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">마지막 업데이트</span>
+                            <span id="last-updated" class="stat-value">None</span>
+                        </div>
+                    </div>
+                    <div id="update-progress-container" class="update-progress-container hidden">
+                        <div class="progress-info">
+                            <span id="update-status-text">진행 중...</span>
+                            <span id="update-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="update-progress-bar" class="progress-bar-fill"></div>
+                        </div>
+
+                        <!-- 실시간 진행 상세 정보 표 -->
+                        <div class="progress-stats-table">
+                            <div class="p-stat">
+                                <span class="p-label">남은 문항 수</span>
+                                <span id="p-remaining" class="p-value">-</span>
+                            </div>
+                            <div class="p-stat">
+                                <span class="p-label">처리 속도</span>
+                                <span id="p-speed" class="p-value">- items/min</span>
+                            </div>
+                            <div class="p-stat">
+                                <span class="p-label">예상 완료 시간</span>
+                                <span id="p-eta" class="p-value">- mins</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="update-controls">
+                        <button id="run-update-btn" class="btn-primary btn-large">지금 업데이트 시작하기</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 5. 사용자 관리 화면 (어드민) -->
+        <div id="user-mgmt-screen" class="screen hidden">
+            <nav class="navbar">
+                <div class="nav-left">
+                    <button class="nav-btn back-btn" id="back-to-landing-from-mgmt">← 뒤로가기</button>
+                    <div class="nav-brand">
+                        <img src="/Mfi_logo.jpg" alt="Logo" class="nav-logo-img">
+                        <span class="nav-logo-text">MFi Management</span>
+                    </div>
+                </div>
+                <div class="nav-links">
+                    <button id="mgmt-logout-btn" class="nav-btn">로그아웃</button>
+                </div>
+            </nav>
+            <main class="content">
+                <div class="glass-card full-width">
+                    <div class="card-header">
+                        <h2>사용자 승인 및 관리</h2>
+                        <p>구글 가입 요청을 검토하고 승인 여부를 결정합니다.</p>
+                    </div>
+                    <div class="user-list-container">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>프로필</th>
+                                    <th>이메일/아이디</th>
+                                    <th>상태</th>
+                                    <th>액션</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-list-body">
+                                <!-- JS에서 동적 생성 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 로딩 오버레이 -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner-container">
+                <div class="spinner"></div>
+                <div class="spinner-core"></div>
+            </div>
+            <p>AI가 문항을 정밀 분석 중입니다...</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
