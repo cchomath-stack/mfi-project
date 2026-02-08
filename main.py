@@ -1,8 +1,8 @@
 import os
 
 # --- [중요] 모든 라이브러리 임포트 전 오프라인 설정 강제 (네트워크 타임아웃 방지) ---
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
+# os.environ["HF_HUB_OFFLINE"] = "1"
+# os.environ["TRANSFORMERS_OFFLINE"] = "1"
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 
 import uuid
@@ -41,8 +41,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 try:
     print(f"Loading CLIP model and processor (Device: {device})...")
-    model = CLIPModel.from_pretrained(MODEL_ID, local_files_only=True).to(device)
-    processor = CLIPProcessor.from_pretrained(MODEL_ID, local_files_only=True)
+    model = CLIPModel.from_pretrained(MODEL_ID, local_files_only=False).to(device)
+    processor = CLIPProcessor.from_pretrained(MODEL_ID, local_files_only=False)
 except Exception:
     model = CLIPModel.from_pretrained(MODEL_ID).to(device)
     processor = CLIPProcessor.from_pretrained(MODEL_ID)
