@@ -225,28 +225,29 @@ async def google_callback(code: str):
         google_user = u_res.json() # id, email, name, picture 등 포함
     
     # 3. Create or update user in SQLite
-    gid = google_user.get("id")
-    email = google_user.get("email")
-    picture = google_user.get("picture")
-    username = email.split("@")[0]
-    # 만약 username이 admin이면 충돌 방지를 위해 뒤에 구글 ID 끝 4자리 붙임
-    if username == "admin":
-        username = f"admin_{gid[-4:]}"
-    
-    conn = get_sqlite_conn()
-    row = conn.execute("SELECT id, is_approved FROM web_users WHERE google_id = ?", (gid,)).fetchone()
-    
-    if not row:
-        # 신규 가입 (승인 대기 상태 0)
-        uid = str(uuid.uuid4())
-        conn.execute("INSERT INTO web_users (id, username, google_id, email, picture_url, role, is_approved) VALUES (?,?,?,?,?,?,?)",
-                    (uid, username, gid, email, picture, "user", 0))
-    else:
-        # 기존 가입된 구글 유저 정보 업데이트
-        conn.execute("UPDATE web_users SET picture_url = ?, email = ? WHERE google_id = ?", (picture, email, gid))
-    
-    conn.commit()
-    conn.close()
+    try:
+        gid = google_user.get("id")
+        email = google_user.get("email")
+        picture = google_user.get("picture")
+        username = email # 이메일 전체를 사용하여 중복 방지
+        
+        conn = get_sqlite_conn()
+        row = conn.execute("SELECT id, is_approved FROM web_users WHERE google_id = ?", (gid,)).fetchone()
+        
+        if not row:
+            # 신규 가입 (승인 대기 상태 0)
+            uid = str(uuid.uuid4())
+            conn.execute("INSERT INTO web_users (id, username, google_id, email, picture_url, role, is_approved) VALUES (?,?,?,?,?,?,?)",
+                        (uid, username, gid, email, picture, "user", 0))
+        else:
+            # 기존 가입된 구글 유저 정보 업데이트
+            conn.execute("UPDATE web_users SET picture_url = ?, email = ? WHERE google_id = ?", (picture, email, gid))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Google Callback Error: {e}")
+        return JSONResponse(status_code=500, content={"detail": f"Registration failed: {str(e)}"})
     
     # 4. Generate JWT for the user
     token = create_access_token({"sub": username})
