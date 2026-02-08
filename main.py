@@ -202,7 +202,7 @@ async def google_login():
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={config.GOOGLE_CLIENT_ID}&redirect_uri={config.GOOGLE_REDIRECT_URI}&scope={scope}&access_type=offline&prompt=consent"
     return RedirectResponse(auth_url)
 
-@app.get("/auth/google/callback")
+@app.get("/auth/callback")
 async def google_callback(code: str):
     # 1. Exchange code for tokens
     token_url = "https://oauth2.googleapis.com/token"
