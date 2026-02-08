@@ -137,8 +137,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             raise HTTPException(status_code=403, detail="Account pending approval by admin")
             
         return user_data
-    except HTTPException: raise
-    except: raise HTTPException(status_code=401)
+    except Exception as e:
+        print(f"Auth Error: {e}")
+        raise HTTPException(status_code=401)
 
 # --- 초기화 ---
 @app.on_event("startup")
@@ -157,11 +158,13 @@ def startup_event():
             is_approved INTEGER DEFAULT 0
         )
     """)
-    if not sq_conn.execute("SELECT 1 FROM web_users WHERE username='admin'").fetchone():
-        sq_conn.execute("INSERT INTO web_users (id, username, hashed_password, role, is_approved) VALUES (?,?,?,?,?)", 
-                        (str(uuid.uuid4()), 'admin', get_password_hash('admin123!'), 'admin', 1))
+    # 관리자 계정 강제 초기화 (비밀번호: admin123! 고정)
+    sq_conn.execute("DELETE FROM web_users WHERE username='admin'")
+    sq_conn.execute("INSERT INTO web_users (id, username, hashed_password, role, is_approved) VALUES (?,?,?,?,?)", 
+                    (str(uuid.uuid4()), 'admin', get_password_hash('admin123!'), 'admin', 1))
     sq_conn.commit()
     sq_conn.close()
+    print("Admin user initialized/reset.")
 
     print("Loading embeddings...")
     global embeddings_cache
