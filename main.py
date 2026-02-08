@@ -29,12 +29,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
-# --- 설정 및 상수 ---
+# --- 설정 및 상수 (config.py로 이전) ---
 SQLITE_DB_PATH = "users.db"
-DB_URL = "postgresql://db_member4:csm17csm17!@43.201.182.105:5432/tki"
-SECRET_KEY = "antigravity_secret_key_change_in_production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
 
 MODEL_ID = "openai/clip-vit-base-patch32"
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -109,7 +105,7 @@ class UpdateStats(BaseModel):
     estimated_minutes_left: float = 0.0
 
 # --- 유틸리티 ---
-def get_db_conn(): return psycopg2.connect(DB_URL)
+def get_db_conn(): return psycopg2.connect(config.DB_URL)
 def get_sqlite_conn():
     conn = sqlite3.connect(SQLITE_DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -120,9 +116,9 @@ def get_password_hash(password): return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.ALGORITHM)
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
