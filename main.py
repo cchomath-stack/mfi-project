@@ -10,7 +10,7 @@ import torch
 import numpy as np
 import psycopg2
 import sqlite3
-from pix2tex.cli import LatexOCR
+from pix2text import Pix2Text
 import requests
 import httpx
 import time
@@ -163,13 +163,13 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
 @app.on_event("startup")
 def startup_event():
     global math_ocr
-    print(f"\n[Startup] Initializing Math OCR (pix2tex) on {device}...")
+    print(f"\n[Startup] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
     try:
-        # LatexOCR internally uses torch.cuda.is_available() but we can try to be safe
-        math_ocr = LatexOCR()
-        print(f"[Startup] Math OCR initialized successfully on {device}!")
+        # P2T 1.0: 텍스트와 수식을 동시에 인식하는 하이브리드 엔진
+        math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': device})
+        print(f"[Startup] Pix2Text initialized successfully on {device}!")
     except Exception as e:
-        print(f"[Startup] CRITICAL: Math OCR Init Error: {e}")
+        print(f"[Startup] CRITICAL: Pix2Text Init Error: {e}")
     sq_conn = get_sqlite_conn()
     # 테이블 확장 대응 (마이그레이션 스크립트로 처리했지만 안전을 위해 IF NOT EXISTS 유지)
     sq_conn.execute("""
@@ -401,10 +401,13 @@ def background_update_embeddings():
             if not rows: break
 
             print(f"\n[Batch] Starting new batch of {len(rows)} items...")
+            batch_start = time.time()
             
             # 1. 병렬 다운로드
+            t1 = time.time()
             with ThreadPoolExecutor(max_workers=5) as executor:
                 results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), rows))
+            print(f"  [Time] Download/Resize total: {time.time()-t1:.2f}s")
             
             valid_items = [(qid, img) for qid, img in results if img is not None]
             if not valid_items: continue
@@ -413,6 +416,7 @@ def background_update_embeddings():
             qids = [x[0] for x in valid_items]
             imgs = [x[1] for x in valid_items]
             
+            t2 = time.time()
             print(f" [Step 1/2] Computing CLIP embeddings for {len(qids)} items...")
             inputs = processor(images=imgs, return_tensors="pt", padding=True).to(device)
             with torch.no_grad():
@@ -420,33 +424,39 @@ def background_update_embeddings():
                 feat = getattr(out, "image_embeds", getattr(out, "pooler_output", out))
                 all_embs = feat.cpu().numpy()
                 all_embs = all_embs / (np.linalg.norm(all_embs, axis=1, keepdims=True) + 1e-8)
+            print(f"  [Time] CLIP Batch: {time.time()-t2:.2f}s")
 
             # 3. Math OCR (건별 처리)
+            t3 = time.time()
             print(f" [Step 2/2] Running Math OCR (pix2tex) for {len(qids)} items...")
+            
+            # DB 연결 한 번만 해서 속도 개선
+            conn_s = get_db_conn(); cur_s = conn_s.cursor()
+            
             for i, qid in enumerate(qids):
                 img = imgs[i]
                 emb = all_embs[i]
-                
+                t_ocr = time.time()
                 try: 
-                    ocr_text = math_ocr(img)
-                    print(f"  > OCR Result ({qid[:8]}): {ocr_text[:50]}...")
+                    # Pix2Text 1.0: recognize() returns list of dicts. 
+                    # We want to merge all identified text/formulas.
+                    outs = math_ocr.recognize(img)
+                    ocr_text = "\n".join([out['text'] for out in outs])
+                    print(f"  > OCR Result ({qid[:8]} | {time.time()-t_ocr:.2f}s): {ocr_text[:30]}...")
                 except Exception as o_e:
                     print(f"  > OCR Error ({qid[:8]}): {o_e}")
                     ocr_text = ""
 
                 # 4. DB 저장
-                conn_s = get_db_conn(); cur_s = conn_s.cursor()
                 cur_s.execute("""
                     INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
                     VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
                     SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
                 """, (qid, emb.tolist(), ocr_text))
-                conn_s.commit(); cur_s.close(); conn_s.close()
-
-                # 5. 캐시 업데이트
                 processed_in_session += 1
-                if processed_in_session % 5 == 0:
-                    print(f" [Status] Processed {processed_in_session} items in this session.")
+
+            conn_s.commit(); cur_s.close(); conn_s.close()
+            print(f"  [Batch Total Time] {time.time()-batch_start:.2f}s (Avg: {(time.time()-batch_start)/len(qids):.2f}s/item)")
         
         print(f">>> Task finished. Total {processed_in_session} items processed.")
     except Exception as e: print(f">>> Critical Error: {e}")
@@ -483,13 +493,13 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
                 q_emb = feat.cpu().numpy()[0] if torch.is_tensor(feat) else feat[0]
             q_emb = q_emb / (np.linalg.norm(q_emb) + 1e-8)
         
+        # Pix2Text OCR for search query
         try:
-            # 쿼리 이미지 Math OCR (pix2tex)
-            q_text_str = math_ocr(img)
+            outs = math_ocr.recognize(img)
+            q_text_str = "\n".join([out['text'] for out in outs])
             q_text = set(filter(None, q_text_str.lower().split()))
-            print(f" [Debug] Query Math-OCR Text: {q_text_str}")
         except Exception as e:
-            print(f" [Debug] Math-OCR Error: {e}")
+            print(f" [Debug] P2T OCR Error: {e}")
             q_text = set()
 
         scores = []
