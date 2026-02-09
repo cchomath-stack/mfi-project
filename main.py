@@ -163,11 +163,11 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
 @app.on_event("startup")
 def startup_event():
     global math_ocr
-    print("\n[Startup] Initializing Math OCR (pix2tex)...")
-    print("[Startup] Heads up: This may take a few minutes to download model weights if first run.")
+    print(f"\n[Startup] Initializing Math OCR (pix2tex) on {device}...")
     try:
+        # LatexOCR internally uses torch.cuda.is_available() but we can try to be safe
         math_ocr = LatexOCR()
-        print("[Startup] Math OCR initialized successfully!")
+        print(f"[Startup] Math OCR initialized successfully on {device}!")
     except Exception as e:
         print(f"[Startup] CRITICAL: Math OCR Init Error: {e}")
     sq_conn = get_sqlite_conn()
