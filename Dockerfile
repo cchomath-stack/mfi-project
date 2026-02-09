@@ -1,5 +1,6 @@
 # 1. Base Image - NVIDIA CUDA 지원 파이썬 이미지 사용
 FROM nvidia/cuda:11.8.0-base-ubuntu22.04
+ENV PYTHONUNBUFFERED=1
 
 # 2. 필수 시스템 패키지 설치
 RUN apt-get update && apt-get install -y \

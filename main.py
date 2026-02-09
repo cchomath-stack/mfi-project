@@ -163,12 +163,13 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
 @app.on_event("startup")
 def startup_event():
     global math_ocr
-    print("Initializing Math OCR (pix2tex)...")
+    print("\n[Startup] Initializing Math OCR (pix2tex)...")
+    print("[Startup] Heads up: This may take a few minutes to download model weights if first run.")
     try:
         math_ocr = LatexOCR()
-        print("Math OCR initialized.")
+        print("[Startup] Math OCR initialized successfully!")
     except Exception as e:
-        print(f"Math OCR Init Error: {e}")
+        print(f"[Startup] CRITICAL: Math OCR Init Error: {e}")
     sq_conn = get_sqlite_conn()
     # 테이블 확장 대응 (마이그레이션 스크립트로 처리했지만 안전을 위해 IF NOT EXISTS 유지)
     sq_conn.execute("""
