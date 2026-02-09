@@ -143,13 +143,14 @@ function handleFile(file) {
         if (searchBtn) searchBtn.disabled = false;
     };
     reader.readAsDataURL(file);
-    // 모달 닫기 이벤트
+    // 모달 닫기 이벤트(중복 방지를 위해 초기화 시 한 번만 걸어도 되지만 여기서 확실히 처리)
     const modal = document.getElementById('image-modal');
     const modalClose = document.getElementById('modal-close-btn');
-    if (modalClose) modalClose.addEventListener('click', () => modal.classList.remove('active'));
-    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+    if (modalClose) modalClose.onclick = () => modal.classList.remove('active'); // Use onclick to overwrite
+    if (modal) modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); }; // Use onclick
 }
 
+// ★ Global Accessibility
 function openImageModal(url, title) {
     const modal = document.getElementById('image-modal');
     const modalImg = document.getElementById('modal-img');
@@ -206,8 +207,10 @@ function renderResults(results) {
     results.forEach(r => {
         const card = document.createElement('div');
         card.className = 'glass-card result-card';
+        // 따옴표 이스케이프 처리하여 onclick 오류 방지
+        const safeTitle = (r.source_title || 'Unknown').replace(/'/g, "\\'");
         card.innerHTML = `
-            <div class="result-img-container" onclick="openImageModal('${r.image_url}', '${r.source_title.replace(/'/g, "\\'")}')">
+            <div class="result-img-container" onclick="openImageModal('${r.image_url}', '${safeTitle}')">
                 <img src="${r.image_url}">
                 <div class="img-hover-overlay"><span>🔍 크게 보기</span></div>
             </div>
@@ -363,6 +366,7 @@ async function deleteUser(id) {
     } catch (e) { alert("삭제 실패"); }
 }
 
-// 외부에서 호출 가능하도록 노출
+// ★ Expose functions to global scope for onclick attributes
 window.approveUser = approveUser;
 window.confirmDeleteUser = confirmDeleteUser;
+window.openImageModal = openImageModal;
