@@ -120,7 +120,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.ALGORITHM)
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def _get_user_by_token(token: str):
     try:
         payload = jwt.decode(token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
         username = payload.get("sub")
@@ -132,14 +132,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         
         user_data = {"id": row['id'], "username": row['username'], "role": row['role'], "is_approved": row['is_approved']}
         
-        # 관리자가 아니면서 승인되지 않은 사용자는 접근 차단 (보안 강화)
         if user_data["role"] != "admin" and not user_data["is_approved"]:
             raise HTTPException(status_code=403, detail="Account pending approval by admin")
             
         return user_data
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(f"Auth Error: {e}")
         raise HTTPException(status_code=401)
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    return await _get_user_by_token(token)
+
+async def get_current_user_with_query_token(token: Optional[str] = None, header_token: Optional[str] = Depends(OAuth2PasswordBearer(tokenUrl="token", auto_error=False))):
+    actual_token = token or header_token
+    if not actual_token:
+        raise HTTPException(status_code=401)
+    return await _get_user_by_token(actual_token)
 
 # --- 초기화 ---
 @app.on_event("startup")
@@ -381,7 +391,7 @@ def background_update_embeddings():
     finally: update_in_progress = False
 
 @app.get("/api/v1/proxy-image")
-async def proxy_image(url: str, current_user: dict = Depends(get_current_user)):
+async def proxy_image(url: str, token: Optional[str] = None, current_user: dict = Depends(get_current_user_with_query_token)):
     # 인증된 사용자만 원본 이미지 url에 접근 가능
     try:
         async with httpx.AsyncClient() as client:
@@ -394,7 +404,7 @@ async def proxy_image(url: str, current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/search", response_model=List[SearchResult])
-async def search(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def search(file: UploadFile = File(...), current_user: dict = Depends(get_current_user), token: str = Depends(oauth2_scheme)):
     # [Phase 6] Rate Limiting 체크
     if not search_limiter.is_allowed(current_user["username"]):
         raise HTTPException(status_code=429, detail="너무 잦은 검색 요청입니다. 잠시 후 다시 시도해 주세요.")
@@ -430,9 +440,9 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
             LEFT JOIN mcat2.problems_problem_with_source pws ON p.id = pws.problem_id
             LEFT JOIN mcat2.problems_source s ON pws.source_id = s.id WHERE p.id = ANY(%s::uuid[])
         """, (ids,))
-        # [보안 개편] 실제 URL 대신 프록시 URL을 전달
+        # [보안 개편] 실제 URL 대신 프록시 URL을 전달 (토큰 포함하여 <img> 태그 지원)
         imap = {str(r[0]): {
-            "url": f"/api/v1/proxy-image?url={requests.utils.quote(r[1])}", 
+            "url": f"/api/v1/proxy-image?url={requests.utils.quote(r[1])}&token={token}", 
             "src": f"[{r[3]}] {r[2]}" if r[3] else r[2]
         } for r in cur.fetchall()}
         cur.close(); conn.close()
