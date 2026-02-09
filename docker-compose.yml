@@ -6,7 +6,7 @@ services:
     container_name: mcat-qanda-api
     restart: always
     ports:
-      - "8000:8000"
+      - "80:8000"
     dns:
       - 8.8.8.8
       - 8.8.4.4
