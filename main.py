@@ -428,7 +428,7 @@ def background_update_embeddings():
 
             # 3. Math OCR (건별 처리)
             t3 = time.time()
-            print(f" [Step 2/2] Running Math OCR (pix2tex) for {len(qids)} items...")
+            print(f" [Step 2/2] Running Hybrid Math OCR (P2T) for {len(qids)} items...")
             
             # DB 연결 한 번만 해서 속도 개선
             conn_s = get_db_conn(); cur_s = conn_s.cursor()
