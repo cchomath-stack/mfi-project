@@ -10,7 +10,7 @@ import torch
 import numpy as np
 import psycopg2
 import sqlite3
-import easyocr
+from pix2tex.cli import LatexOCR
 import requests
 import httpx
 import time
@@ -43,8 +43,9 @@ except Exception:
     model = CLIPModel.from_pretrained(MODEL_ID).to(device)
     processor = CLIPProcessor.from_pretrained(MODEL_ID)
 
-print("Initializing OCR reader...")
-reader = easyocr.Reader(['ko', 'en'], gpu=(device == 'cuda'))
+print("Preparing OCR engine placeholder...")
+# math_ocr는 startup_event에서 초기화하여 Docker 시작 안정성 확보
+math_ocr = None
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -161,6 +162,13 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
 # --- 초기화 ---
 @app.on_event("startup")
 def startup_event():
+    global math_ocr
+    print("Initializing Math OCR (pix2tex)...")
+    try:
+        math_ocr = LatexOCR()
+        print("Math OCR initialized.")
+    except Exception as e:
+        print(f"Math OCR Init Error: {e}")
     sq_conn = get_sqlite_conn()
     # 테이블 확장 대응 (마이그레이션 스크립트로 처리했지만 안전을 위해 IF NOT EXISTS 유지)
     sq_conn.execute("""
@@ -183,12 +191,12 @@ def startup_event():
     sq_conn.close()
     print("Admin user initialized/reset.")
 
-    print("Loading embeddings...")
+    print("Loading embeddings from question_image_embeddings...")
     global embeddings_cache
     try:
         conn = get_db_conn()
         cur = conn.cursor()
-        cur.execute("SELECT problem_id, image_embedding, ocr_text FROM mcat2.problem_image_embeddings")
+        cur.execute("SELECT question_id, image_embedding, ocr_text FROM mcat2.question_image_embeddings")
         for row in cur.fetchall():
             pid, emb, ocr = str(row[0]), np.array(row[1], dtype=np.float32), row[2] or ""
             embeddings_cache.append((pid, emb / (np.linalg.norm(emb) + 1e-8), ocr.strip()))
@@ -359,52 +367,61 @@ async def run_update(background_tasks: BackgroundTasks, current_user: dict = Dep
 
 def background_update_embeddings():
     global update_in_progress, embeddings_cache, processed_in_session
-    print("\n>>> Background task started.")
+    print("\n>>> New Background indexing task started (question_render).")
     try:
         while True:
             conn = get_db_conn(); cur = conn.cursor()
+            # question_render에는 있으나 embeddings에는 없는 데이터 50개씩 처리
             cur.execute("""
-                SELECT p.id, p.problem_image_url FROM mcat2.problems_problem p
-                LEFT JOIN mcat2.problem_image_embeddings e ON p.id = e.problem_id
-                WHERE (e.problem_id IS NULL OR e.ocr_text IS NULL OR e.ocr_text = '')
-                  AND p.problem_image_url IS NOT NULL AND p.problem_image_url != '' LIMIT 50
+                SELECT q.question_id, q.preview_url FROM mcat2.question_render q
+                LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
+                WHERE e.question_id IS NULL
+                  AND q.preview_url IS NOT NULL AND q.preview_url != '' LIMIT 50
             """)
             rows = cur.fetchall(); cur.close(); conn.close()
             if not rows or not update_in_progress: break
 
-            for pid_uuid, url in rows:
-                pid = str(pid_uuid)
+            for qid_uuid, url in rows:
+                qid = str(qid_uuid)
                 try:
                     resp = requests.get(url, timeout=10); resp.raise_for_status()
-                    image = Image.open(BytesIO(resp.content)).convert("RGB")
+                    image_data = resp.content
+                    image = Image.open(BytesIO(image_data)).convert("RGB")
+                    
+                    # 1. CLIP Embedding
                     inputs = processor(images=image, return_tensors="pt").to(device)
                     with torch.no_grad():
                         out = model.get_image_features(**inputs)
-                        if torch.is_tensor(out):
-                            emb = out.cpu().numpy()[0]
-                        else:
-                            feat = getattr(out, "image_embeds", getattr(out, "pooler_output", out))
-                            emb = feat.cpu().numpy()[0] if torch.is_tensor(feat) else feat[0]
+                        feat = getattr(out, "image_embeds", getattr(out, "pooler_output", out))
+                        emb = feat.cpu().numpy()[0] if torch.is_tensor(feat) else feat[0]
                         emb = emb / (np.linalg.norm(emb) + 1e-8)
-                    try: ocr_res = reader.readtext(resp.content, detail=0); ocr_text = " ".join(ocr_res).strip()
-                    except: ocr_text = ""
+                    
+                    # 2. 고정밀 Math OCR (pix2tex)
+                    try: 
+                        ocr_text = math_ocr(image)
+                        print(f" [OCR Debug] {qid[:8]}: {ocr_text}")
+                    except Exception as o_e:
+                        print(f" [OCR Error] {o_e}")
+                        ocr_text = ""
 
+                    # 3. DB 저장 (mcat2.question_image_embeddings)
                     conn_s = get_db_conn(); cur_s = conn_s.cursor()
                     cur_s.execute("""
-                        INSERT INTO mcat2.problem_image_embeddings (problem_id, system_id, image_embedding, ocr_text, updated_at)
-                        VALUES (%s, %s, %s, %s, NOW()) ON CONFLICT (problem_id) DO UPDATE 
+                        INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
+                        VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
                         SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
-                    """, (pid, MODEL_ID, emb.tolist(), ocr_text))
+                    """, (qid, emb.tolist(), ocr_text))
                     conn_s.commit(); cur_s.close(); conn_s.close()
 
+                    # 4. 캐시 업데이트
                     found = False
                     for i, (cid, cemb, ctxt) in enumerate(embeddings_cache):
-                        if cid == pid: embeddings_cache[i] = (pid, emb, ocr_text); found = True; break
-                    if not found: embeddings_cache.append((pid, emb, ocr_text))
+                        if cid == qid: embeddings_cache[i] = (qid, emb, ocr_text); found = True; break
+                    if not found: embeddings_cache.append((qid, emb, ocr_text))
 
                     processed_in_session += 1
-                    print(f" [Progress] {processed_in_session} items processed. (ID: {pid[:8]})")
-                except Exception as e: print(f" [Error] {pid[:8]}: {e}")
+                    print(f" [Progress] {processed_in_session} items processed. (QID: {qid[:8]})")
+                except Exception as e: print(f" [Error] {qid[:8]}: {e}")
         print(">>> Task finished.")
     except Exception as e: print(f">>> Critical Error: {e}")
     finally: update_in_progress = False
@@ -441,39 +458,40 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
             q_emb = q_emb / (np.linalg.norm(q_emb) + 1e-8)
         
         try:
-            # 텍스트 추출 시 불필요한 공백 및 특수문자 제거하여 매칭 확률 상향
-            ocr_results = reader.readtext(data, detail=0)
-            q_text_str = " ".join(ocr_results).lower()
-            q_text = set(filter(None, q_text_str.split()))
-            print(f" [Debug] Query OCR Text: {q_text}")
+            # 쿼리 이미지 Math OCR (pix2tex)
+            q_text_str = math_ocr(img)
+            q_text = set(filter(None, q_text_str.lower().split()))
+            print(f" [Debug] Query Math-OCR Text: {q_text_str}")
         except Exception as e:
-            print(f" [Debug] OCR Error: {e}")
+            print(f" [Debug] Math-OCR Error: {e}")
             q_text = set()
 
         scores = []
-        for pid, emb, ocr in embeddings_cache:
+        for qid, emb, ocr in embeddings_cache:
             clip = float(np.dot(q_emb, emb))
-            txt = len(q_text.intersection(set(ocr.split()))) / max(len(q_text), 1) if q_text and ocr else 0.0
-            scores.append((pid, (clip * 0.2) + (txt * 0.8), txt))
+            # 수식 매칭을 위해 간단한 셋 교집합 점수 계산
+            txt = len(q_text.intersection(set(ocr.lower().split()))) / max(len(q_text), 1) if q_text and ocr else 0.0
+            scores.append((qid, (clip * 0.2) + (txt * 0.8), txt))
         
         scores.sort(key=lambda x: x[1], reverse=True)
         top = scores[:5]; ids = [s[0] for s in top]
         
         conn = get_db_conn(); cur = conn.cursor()
+        # question_render와 user_extracted_questions를 조인하여 메타데이터 추출
         cur.execute("""
-            SELECT p.id, p.problem_image_url, COALESCE(s.title, s.origin_filename, 'Unknown'), s.exam_year
-            FROM mcat2.problems_problem p
-            LEFT JOIN mcat2.problems_problem_with_source pws ON p.id = pws.problem_id
-            LEFT JOIN mcat2.problems_source s ON pws.source_id = s.id WHERE p.id = ANY(%s::uuid[])
+            SELECT q.question_id, q.preview_url, COALESCE(u.source, 'Unknown Source')
+            FROM mcat2.question_render q
+            LEFT JOIN mcat2.user_extracted_questions u ON q.question_id::text = u.question_id
+            WHERE q.question_id = ANY(%s::uuid[])
         """, (ids,))
-        # [보안 개편] 실제 URL 대신 프록시 URL을 전달 (토큰 포함하여 <img> 태그 지원)
+        
         imap = {str(r[0]): {
             "url": f"/api/v1/proxy-image?url={requests.utils.quote(r[1])}&token={token}", 
-            "src": f"[{r[3]}] {r[2]}" if r[3] else r[2]
+            "src": r[2]
         } for r in cur.fetchall()}
         cur.close(); conn.close()
 
-        return [{"problem_id": p, "image_url": imap.get(p, {})["url"], "source_title": imap.get(p, {})["src"], "similarity": s, "ocr_match": o} for p, s, o in top]
+        return [{"problem_id": p, "image_url": imap.get(p, {}).get("url", ""), "source_title": imap.get(p, {}).get("src", "Unknown"), "similarity": s, "ocr_match": o} for p, s, o in top]
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
