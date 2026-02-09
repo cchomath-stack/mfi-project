@@ -143,6 +143,22 @@ function handleFile(file) {
         if (searchBtn) searchBtn.disabled = false;
     };
     reader.readAsDataURL(file);
+    // 모달 닫기 이벤트
+    const modal = document.getElementById('image-modal');
+    const modalClose = document.getElementById('modal-close-btn');
+    if (modalClose) modalClose.addEventListener('click', () => modal.classList.remove('active'));
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+}
+
+function openImageModal(url, title) {
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-img');
+    const modalCaption = document.getElementById('modal-caption');
+    if (modal && modalImg) {
+        modalImg.src = url;
+        if (modalCaption) modalCaption.innerText = title || "문항 이미지 확대";
+        modal.classList.add('active');
+    }
 }
 
 async function handleLogin(e) {
@@ -191,7 +207,10 @@ function renderResults(results) {
         const card = document.createElement('div');
         card.className = 'glass-card result-card';
         card.innerHTML = `
-            <div class="result-img-container"><img src="${r.image_url}"></div>
+            <div class="result-img-container" onclick="openImageModal('${r.image_url}', '${r.source_title.replace(/'/g, "\\'")}')">
+                <img src="${r.image_url}">
+                <div class="img-hover-overlay"><span>🔍 크게 보기</span></div>
+            </div>
             <div class="result-info">
                 <span class="result-source">${r.source_title}</span>
                 <div class="result-footer">

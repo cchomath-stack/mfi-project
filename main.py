@@ -124,22 +124,29 @@ async def _get_user_by_token(token: str):
     try:
         payload = jwt.decode(token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
         username = payload.get("sub")
-        if not username: raise HTTPException(status_code=401)
+        if not username:
+            print(" [Auth Error] Payload missing 'sub'")
+            raise HTTPException(status_code=401)
+        
         conn = get_sqlite_conn()
         row = conn.execute("SELECT id, username, role, is_approved FROM web_users WHERE username = ?", (username,)).fetchone()
         conn.close()
-        if not row: raise HTTPException(status_code=401)
+        
+        if not row:
+            print(f" [Auth Error] User '{username}' not found in database")
+            raise HTTPException(status_code=401)
         
         user_data = {"id": row['id'], "username": row['username'], "role": row['role'], "is_approved": row['is_approved']}
         
         if user_data["role"] != "admin" and not user_data["is_approved"]:
+            print(f" [Auth Debug] User '{username}' is pending approval")
             raise HTTPException(status_code=403, detail="Account pending approval by admin")
             
         return user_data
     except HTTPException as e:
         raise e
     except Exception as e:
-        print(f"Auth Error: {e}")
+        print(f" [Auth Error] Token verification failed: {str(e)}")
         raise HTTPException(status_code=401)
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -227,12 +234,20 @@ async def google_callback(code: str):
     async with httpx.AsyncClient() as client:
         t_res = await client.post(token_url, data=token_data)
         if t_res.status_code != 200:
-            return JSONResponse(status_code=400, content={"detail": "Failed to exchange token"})
+            error_detail = t_res.text
+            print(f" [OAuth Error] Token exchange failed: {error_detail}")
+            return JSONResponse(status_code=400, content={"detail": f"Failed to exchange token: {error_detail}"})
         
         tokens = t_res.json()
+        print(f" [OAuth Debug] Tokens received. Fetching user info...")
         u_res = await client.get("https://www.googleapis.com/oauth2/v2/userinfo", 
                                 headers={"Authorization": f"Bearer {tokens['access_token']}"})
+        if u_res.status_code != 200:
+            print(f" [OAuth Error] Failed to fetch user info: {u_res.text}")
+            return JSONResponse(status_code=400, content={"detail": "Failed to fetch user info"})
+        
         google_user = u_res.json() # id, email, name, picture 등 포함
+        print(f" [OAuth Debug] Google User: {google_user.get('email')}")
     
     # 3. Create or update user in SQLite
     try:
@@ -242,16 +257,20 @@ async def google_callback(code: str):
         username = email # 이메일 전체를 사용하여 중복 방지
         
         conn = get_sqlite_conn()
-        row = conn.execute("SELECT id, is_approved FROM web_users WHERE google_id = ?", (gid,)).fetchone()
+        row = conn.execute("SELECT id, username, is_approved FROM web_users WHERE google_id = ?", (gid,)).fetchone()
         
         if not row:
             # 신규 가입 (승인 대기 상태 0)
             uid = str(uuid.uuid4())
             conn.execute("INSERT INTO web_users (id, username, google_id, email, picture_url, role, is_approved) VALUES (?,?,?,?,?,?,?)",
                         (uid, username, gid, email, picture, "user", 0))
+            print(f" [OAuth Debug] New user registered: {username}")
         else:
             # 기존 가입된 구글 유저 정보 업데이트
+            # 데이터베이스에 이미 저장된 username을 사용해야 토큰 불일치가 발생하지 않음
+            username = row['username']
             conn.execute("UPDATE web_users SET picture_url = ?, email = ? WHERE google_id = ?", (picture, email, gid))
+            print(f" [OAuth Debug] Existing user logged in: {username}")
         
         conn.commit()
         conn.close()
@@ -421,14 +440,21 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
                 q_emb = feat.cpu().numpy()[0] if torch.is_tensor(feat) else feat[0]
             q_emb = q_emb / (np.linalg.norm(q_emb) + 1e-8)
         
-        try: q_text = set(" ".join(reader.readtext(data, detail=0)).split())
-        except: q_text = set()
+        try:
+            # 텍스트 추출 시 불필요한 공백 및 특수문자 제거하여 매칭 확률 상향
+            ocr_results = reader.readtext(data, detail=0)
+            q_text_str = " ".join(ocr_results).lower()
+            q_text = set(filter(None, q_text_str.split()))
+            print(f" [Debug] Query OCR Text: {q_text}")
+        except Exception as e:
+            print(f" [Debug] OCR Error: {e}")
+            q_text = set()
 
         scores = []
         for pid, emb, ocr in embeddings_cache:
             clip = float(np.dot(q_emb, emb))
             txt = len(q_text.intersection(set(ocr.split()))) / max(len(q_text), 1) if q_text and ocr else 0.0
-            scores.append((pid, (clip * 0.75) + (txt * 0.25), txt))
+            scores.append((pid, (clip * 0.2) + (txt * 0.8), txt))
         
         scores.sort(key=lambda x: x[1], reverse=True)
         top = scores[:5]; ids = [s[0] for s in top]
