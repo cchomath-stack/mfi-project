@@ -250,7 +250,16 @@
             </div>
             <p>AI가 문항을 정밀 분석 중입니다...</p>
         </div>
+
     </div>
+
+    <!-- 이미지 확대 모달 (Stacking Context 확보를 위해 #app 밖으로 이동) -->
+    <div id="image-modal" class="modal">
+        <span class="modal-close" id="modal-close-btn">&times;</span>
+        <img class="modal-content" id="modal-img">
+        <div id="modal-caption"></div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 

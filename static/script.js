@@ -123,14 +123,22 @@ function setupEventListeners() {
     document.getElementById('search-btn').addEventListener('click', runSearch);
     document.getElementById('run-update-btn').addEventListener('click', runUpdate);
 
-    // ★ 모달 이벤트 초기화 (여기에 있어야 항상 작동함)
+    // ★ 모달 이벤트 초기화 (is-visible 기반)
     const modal = document.getElementById('image-modal');
     const modalClose = document.getElementById('modal-close-btn');
     if (modalClose) {
-        modalClose.onclick = () => modal.classList.remove('active');
+        modalClose.onclick = () => {
+            console.log("Closing modal (btn)");
+            modal.classList.remove('is-visible');
+        };
     }
     if (modal) {
-        modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                console.log("Closing modal (backdrop)");
+                modal.classList.remove('is-visible');
+            }
+        };
     }
 }
 
@@ -151,14 +159,18 @@ function handleFile(file) {
 
 // ★ Global Accessibility
 function openImageModal(url, title) {
-    console.log("Opening modal for:", url);
+    console.log("openImageModal triggering for:", url);
     const modal = document.getElementById('image-modal');
     const modalImg = document.getElementById('modal-img');
     const modalCaption = document.getElementById('modal-caption');
+
     if (modal && modalImg) {
         modalImg.src = url;
         if (modalCaption) modalCaption.innerText = title || "문항 이미지 확대";
-        modal.classList.add('active');
+        modal.classList.add('is-visible');
+        console.log("is-visible added. Display state:", getComputedStyle(modal).display);
+    } else {
+        console.error("Critical: Modal elements missing!", { modal, modalImg });
     }
 }
 
