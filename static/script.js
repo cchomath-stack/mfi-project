@@ -15,12 +15,11 @@ const screens = {
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("MCAT_QANDA Initializing... (Production-ready Version)");
+    console.log("MFi Initializing...");
     initAuth();
     setupEventListeners();
 });
 
-// Google OAuth 콜백 시 URL에 포함된 토큰 처리
 function initAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
@@ -28,7 +27,6 @@ function initAuth() {
     if (tokenFromUrl) {
         authToken = tokenFromUrl;
         localStorage.setItem('authToken', authToken);
-        // 토큰 노출 방지를 위해 URL 정리
         window.history.replaceState({}, document.title, "/");
     }
 
@@ -37,7 +35,6 @@ function initAuth() {
 
 async function checkAuth() {
     try {
-        // 내 정보 및 승인 상태 확인 전용 API 호출
         const res = await fetch('/me', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
@@ -48,10 +45,8 @@ async function checkAuth() {
             showScreen('landing');
             updateUI();
         } else if (res.status === 403) {
-            // 승인 대기 상태 (403 Forbidden)
             showScreen('pending');
         } else {
-            // 토큰 만료 또는 기타 오류 (401 등)
             logout();
         }
     } catch (e) {
@@ -87,7 +82,6 @@ function logout() {
 function setupEventListeners() {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
 
-    // 구글 로그인 리다이렉트
     const googleBtn = document.getElementById('google-login-btn');
     if (googleBtn) googleBtn.addEventListener('click', () => {
         window.location.href = "/auth/google/login";
@@ -122,12 +116,22 @@ function setupEventListeners() {
 
     window.addEventListener('paste', (e) => {
         if (screens.search && screens.search.classList.contains('hidden')) return;
-        const items = e.clipboardData.items;
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (let item of items) if (item.type.includes('image')) handleFile(item.getAsFile());
     });
 
     document.getElementById('search-btn').addEventListener('click', runSearch);
     document.getElementById('run-update-btn').addEventListener('click', runUpdate);
+
+    // ★ 모달 이벤트 초기화 (여기에 있어야 항상 작동함)
+    const modal = document.getElementById('image-modal');
+    const modalClose = document.getElementById('modal-close-btn');
+    if (modalClose) {
+        modalClose.onclick = () => modal.classList.remove('active');
+    }
+    if (modal) {
+        modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+    }
 }
 
 function handleFile(file) {
@@ -143,15 +147,11 @@ function handleFile(file) {
         if (searchBtn) searchBtn.disabled = false;
     };
     reader.readAsDataURL(file);
-    // 모달 닫기 이벤트(중복 방지를 위해 초기화 시 한 번만 걸어도 되지만 여기서 확실히 처리)
-    const modal = document.getElementById('image-modal');
-    const modalClose = document.getElementById('modal-close-btn');
-    if (modalClose) modalClose.onclick = () => modal.classList.remove('active'); // Use onclick to overwrite
-    if (modal) modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); }; // Use onclick
 }
 
 // ★ Global Accessibility
 function openImageModal(url, title) {
+    console.log("Opening modal for:", url);
     const modal = document.getElementById('image-modal');
     const modalImg = document.getElementById('modal-img');
     const modalCaption = document.getElementById('modal-caption');
@@ -176,7 +176,7 @@ async function handleLogin(e) {
             localStorage.setItem('authToken', authToken);
             currentUser = { username: u, role: u === 'admin' ? 'admin' : 'user' };
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            checkAuth(); // 승인 여부 체크를 포함한 진입
+            checkAuth();
         } else {
             err.innerText = "로그인 실패: 아이디/비밀번호 확인";
         }
@@ -195,6 +195,7 @@ async function runSearch() {
         });
         if (res.ok) renderResults(await res.json());
         else if (res.status === 403) alert("계정 승인이 대기 중입니다.");
+        else alert("검색 중 오류가 발생했습니다.");
     } catch (e) { alert("검색 실패"); }
     finally { if (ov) ov.classList.add('hidden'); }
 }
@@ -204,24 +205,33 @@ function renderResults(results) {
     const count = document.getElementById('result-count');
     grid.innerHTML = '';
     if (count) count.innerText = results.length;
+
     results.forEach(r => {
         const card = document.createElement('div');
         card.className = 'glass-card result-card';
-        // 따옴표 이스케이프 처리하여 onclick 오류 방지
-        const safeTitle = (r.source_title || 'Unknown').replace(/'/g, "\\'");
-        card.innerHTML = `
-            <div class="result-img-container" onclick="openImageModal('${r.image_url}', '${safeTitle}')">
-                <img src="${r.image_url}">
-                <div class="img-hover-overlay"><span>🔍 크게 보기</span></div>
-            </div>
-            <div class="result-info">
-                <span class="result-source">${r.source_title}</span>
-                <div class="result-footer">
-                    <span>ID: ${r.problem_id.substring(0, 6)}</span>
-                    <span class="similarity-badge">${(r.similarity * 100).toFixed(1)}% 매칭</span>
-                </div>
+
+        // 인라인 onclick 대신 addEventListener 사용을 위해 요소 생성 후 이벤트 부착
+        const container = document.createElement('div');
+        container.className = 'result-img-container';
+        container.innerHTML = `
+            <img src="${r.image_url}">
+            <div class="img-hover-overlay"><span>🔍 크게 보기</span></div>
+        `;
+        // 클로저를 이용해 안전하게 이벤트 전달
+        container.onclick = () => openImageModal(r.image_url, r.source_title);
+
+        const info = document.createElement('div');
+        info.className = 'result-info';
+        info.innerHTML = `
+            <span class="result-source">${r.source_title}</span>
+            <div class="result-footer">
+                <span>ID: ${r.problem_id.substring(0, 6)}</span>
+                <span class="similarity-badge">${(r.similarity * 100).toFixed(1)}% 매칭</span>
             </div>
         `;
+
+        card.appendChild(container);
+        card.appendChild(info);
         grid.appendChild(card);
     });
     document.getElementById('results-section').classList.remove('hidden');
@@ -237,9 +247,12 @@ async function fetchStats() {
         if (!res.ok) return;
         const d = await res.json();
 
-        document.getElementById('total-embeddings').innerText = d.total_embeddings.toLocaleString();
-        document.getElementById('pending-count').innerText = d.pending_count.toLocaleString();
-        document.getElementById('last-updated').innerText = d.last_updated;
+        const elTotal = document.getElementById('total-embeddings');
+        const elPending = document.getElementById('pending-count');
+        const elLast = document.getElementById('last-updated');
+        if (elTotal) elTotal.innerText = d.total_embeddings.toLocaleString();
+        if (elPending) elPending.innerText = d.pending_count.toLocaleString();
+        if (elLast) elLast.innerText = d.last_updated;
 
         const btn = document.getElementById('run-update-btn');
         if (btn) {
@@ -253,8 +266,11 @@ async function fetchStats() {
         const progSection = document.getElementById('update-progress-container');
         if (d.update_in_progress) {
             if (progSection) { progSection.classList.remove('hidden'); progSection.style.display = 'block'; }
-            document.getElementById('p-remaining').innerText = d.pending_count.toLocaleString();
-            document.getElementById('p-speed').innerText = d.processed_this_session > 0 ? `${d.items_per_min} it/m` : "준비 중...";
+            const elPRemaining = document.getElementById('p-remaining');
+            const elPSpeed = document.getElementById('p-speed');
+            const elPEta = document.getElementById('p-eta');
+            if (elPRemaining) elPRemaining.innerText = d.pending_count.toLocaleString();
+            if (elPSpeed) elPSpeed.innerText = d.processed_this_session > 0 ? `${d.items_per_min} it/m` : "준비 중...";
 
             let etaText = "계산 중...";
             if (d.processed_this_session > 0) {
@@ -267,13 +283,16 @@ async function fetchStats() {
                     etaText = `${totalMins}m`;
                 }
             }
-            document.getElementById('p-eta').innerText = etaText;
+            if (elPEta) elPEta.innerText = etaText;
 
             const total = Math.max(1, d.pending_count + d.processed_this_session);
             const percent = (d.processed_this_session / total * 100).toFixed(1);
-            document.getElementById('update-percentage').innerText = `${percent}%`;
-            document.getElementById('update-progress-bar').style.width = `${percent}%`;
-            document.getElementById('update-status-text').innerText = d.processed_this_session > 0
+            const elPercent = document.getElementById('update-percentage');
+            const elBar = document.getElementById('update-progress-bar');
+            const elStat = document.getElementById('update-status-text');
+            if (elPercent) elPercent.innerText = `${percent}%`;
+            if (elBar) elBar.style.width = `${percent}%`;
+            if (elStat) elStat.innerText = d.processed_this_session > 0
                 ? `수집 중... (${d.processed_this_session}개 완료)` : `엔진 준비 및 DB 스캔 중...`;
         } else if (progSection) {
             progSection.classList.add('hidden'); progSection.style.display = 'none';
@@ -304,7 +323,6 @@ async function runUpdate() {
     }
 }
 
-// --- User Management Logic ---
 async function loadUserList() {
     try {
         const res = await fetch('/admin/users', {
@@ -319,6 +337,7 @@ async function loadUserList() {
 
 function renderUserList(users) {
     const body = document.getElementById('user-list-body');
+    if (!body) return;
     body.innerHTML = '';
     users.forEach(u => {
         const tr = document.createElement('tr');
@@ -366,7 +385,7 @@ async function deleteUser(id) {
     } catch (e) { alert("삭제 실패"); }
 }
 
-// ★ Expose functions to global scope for onclick attributes
+// ★ Expose functions to global scope
 window.approveUser = approveUser;
 window.confirmDeleteUser = confirmDeleteUser;
 window.openImageModal = openImageModal;
