@@ -378,7 +378,7 @@ def background_update_embeddings():
         try:
             resp = requests.get(url, timeout=10); resp.raise_for_status()
             img = Image.open(BytesIO(resp.content)).convert("RGB")
-            # 너무 큰 이미지는 OCR 속도를 저하시키므로 리사이즈 (정확도 유지 범위 내)
+            # 너무 큰 이미지는 OCR 속도를 저하시키므로 리사이즈
             if max(img.size) > 1024:
                 img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
             return str(qid_uuid), img
@@ -388,48 +388,50 @@ def background_update_embeddings():
 
     try:
         while True:
+            if not update_in_progress: break
             conn = get_db_conn(); cur = conn.cursor()
-            # 50개씩 가져오기
+            # 10개씩 가져와서 UI 응답성 향상
             cur.execute("""
                 SELECT q.question_id, q.preview_url FROM mcat2.question_render q
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
                 WHERE e.question_id IS NULL
-                  AND q.preview_url IS NOT NULL AND q.preview_url != '' LIMIT 50
+                  AND q.preview_url IS NOT NULL AND q.preview_url != '' LIMIT 10
             """)
             rows = cur.fetchall(); cur.close(); conn.close()
-            if not rows or not update_in_progress: break
+            if not rows: break
 
-            # 1. 병렬 다운로드 (네트워크 대기 시간 제거)
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            print(f"\n[Batch] Starting new batch of {len(rows)} items...")
+            
+            # 1. 병렬 다운로드
+            with ThreadPoolExecutor(max_workers=5) as executor:
                 results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), rows))
             
             valid_items = [(qid, img) for qid, img in results if img is not None]
             if not valid_items: continue
 
-            # 2. CLIP Batch Embedding (GPU 효율 극대화)
+            # 2. CLIP Batch Embedding
             qids = [x[0] for x in valid_items]
             imgs = [x[1] for x in valid_items]
             
-            # CLIP 전처리 및 추론
+            print(f" [Step 1/2] Computing CLIP embeddings for {len(qids)} items...")
             inputs = processor(images=imgs, return_tensors="pt", padding=True).to(device)
             with torch.no_grad():
                 out = model.get_image_features(**inputs)
                 feat = getattr(out, "image_embeds", getattr(out, "pooler_output", out))
                 all_embs = feat.cpu().numpy()
-                # L2 Normalize
                 all_embs = all_embs / (np.linalg.norm(all_embs, axis=1, keepdims=True) + 1e-8)
 
-            # 3. Math OCR (건별 처리하되 GPU 확인)
+            # 3. Math OCR (건별 처리)
+            print(f" [Step 2/2] Running Math OCR (pix2tex) for {len(qids)} items...")
             for i, qid in enumerate(qids):
                 img = imgs[i]
                 emb = all_embs[i]
                 
                 try: 
-                    # pix2tex는 한 번에 하나씩 처리하되 GPU 가동 여부 체크
                     ocr_text = math_ocr(img)
-                    if i % 10 == 0: print(f" [OCR Debug] {qid[:8]}: {ocr_text[:30]}...")
+                    print(f"  > OCR Result ({qid[:8]}): {ocr_text[:50]}...")
                 except Exception as o_e:
-                    print(f" [OCR Error] {o_e}")
+                    print(f"  > OCR Error ({qid[:8]}): {o_e}")
                     ocr_text = ""
 
                 # 4. DB 저장
@@ -442,16 +444,11 @@ def background_update_embeddings():
                 conn_s.commit(); cur_s.close(); conn_s.close()
 
                 # 5. 캐시 업데이트
-                found = False
-                for idx, (cid, cemb, ctxt) in enumerate(embeddings_cache):
-                    if cid == qid: embeddings_cache[idx] = (qid, emb, ocr_text); found = True; break
-                if not found: embeddings_cache.append((qid, emb, ocr_text))
-
                 processed_in_session += 1
-                if processed_in_session % 10 == 0:
-                    print(f" [Progress] {processed_in_session} items processed.")
+                if processed_in_session % 5 == 0:
+                    print(f" [Status] Processed {processed_in_session} items in this session.")
         
-        print(f">>> Task finished. Total {processed_in_session} items processed in this session.")
+        print(f">>> Task finished. Total {processed_in_session} items processed.")
     except Exception as e: print(f">>> Critical Error: {e}")
     finally: update_in_progress = False
 
