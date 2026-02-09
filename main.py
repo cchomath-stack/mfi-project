@@ -366,13 +366,30 @@ async def run_update(background_tasks: BackgroundTasks, current_user: dict = Dep
     background_tasks.add_task(background_update_embeddings)
     return {"message": "Started"}
 
+from concurrent.futures import ThreadPoolExecutor
+
 def background_update_embeddings():
-    global update_in_progress, embeddings_cache, processed_in_session
-    print("\n>>> New Background indexing task started (question_render).")
+    global update_in_progress, embeddings_cache, processed_in_session, update_start_time
+    print("\n>>> Optimized Background indexing task started (question_render).")
+    update_start_time = datetime.now()
+    
+    # 헬퍼: 이미지 다운로드 및 전처리
+    def download_and_preprocess(qid_uuid, url):
+        try:
+            resp = requests.get(url, timeout=10); resp.raise_for_status()
+            img = Image.open(BytesIO(resp.content)).convert("RGB")
+            # 너무 큰 이미지는 OCR 속도를 저하시키므로 리사이즈 (정확도 유지 범위 내)
+            if max(img.size) > 1024:
+                img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+            return str(qid_uuid), img
+        except Exception as e:
+            print(f" [Download Error] {qid_uuid}: {e}")
+            return str(qid_uuid), None
+
     try:
         while True:
             conn = get_db_conn(); cur = conn.cursor()
-            # question_render에는 있으나 embeddings에는 없는 데이터 50개씩 처리
+            # 50개씩 가져오기
             cur.execute("""
                 SELECT q.question_id, q.preview_url FROM mcat2.question_render q
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
@@ -382,48 +399,59 @@ def background_update_embeddings():
             rows = cur.fetchall(); cur.close(); conn.close()
             if not rows or not update_in_progress: break
 
-            for qid_uuid, url in rows:
-                qid = str(qid_uuid)
-                try:
-                    resp = requests.get(url, timeout=10); resp.raise_for_status()
-                    image_data = resp.content
-                    image = Image.open(BytesIO(image_data)).convert("RGB")
-                    
-                    # 1. CLIP Embedding
-                    inputs = processor(images=image, return_tensors="pt").to(device)
-                    with torch.no_grad():
-                        out = model.get_image_features(**inputs)
-                        feat = getattr(out, "image_embeds", getattr(out, "pooler_output", out))
-                        emb = feat.cpu().numpy()[0] if torch.is_tensor(feat) else feat[0]
-                        emb = emb / (np.linalg.norm(emb) + 1e-8)
-                    
-                    # 2. 고정밀 Math OCR (pix2tex)
-                    try: 
-                        ocr_text = math_ocr(image)
-                        print(f" [OCR Debug] {qid[:8]}: {ocr_text}")
-                    except Exception as o_e:
-                        print(f" [OCR Error] {o_e}")
-                        ocr_text = ""
+            # 1. 병렬 다운로드 (네트워크 대기 시간 제거)
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), rows))
+            
+            valid_items = [(qid, img) for qid, img in results if img is not None]
+            if not valid_items: continue
 
-                    # 3. DB 저장 (mcat2.question_image_embeddings)
-                    conn_s = get_db_conn(); cur_s = conn_s.cursor()
-                    cur_s.execute("""
-                        INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
-                        VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
-                        SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
-                    """, (qid, emb.tolist(), ocr_text))
-                    conn_s.commit(); cur_s.close(); conn_s.close()
+            # 2. CLIP Batch Embedding (GPU 효율 극대화)
+            qids = [x[0] for x in valid_items]
+            imgs = [x[1] for x in valid_items]
+            
+            # CLIP 전처리 및 추론
+            inputs = processor(images=imgs, return_tensors="pt", padding=True).to(device)
+            with torch.no_grad():
+                out = model.get_image_features(**inputs)
+                feat = getattr(out, "image_embeds", getattr(out, "pooler_output", out))
+                all_embs = feat.cpu().numpy()
+                # L2 Normalize
+                all_embs = all_embs / (np.linalg.norm(all_embs, axis=1, keepdims=True) + 1e-8)
 
-                    # 4. 캐시 업데이트
-                    found = False
-                    for i, (cid, cemb, ctxt) in enumerate(embeddings_cache):
-                        if cid == qid: embeddings_cache[i] = (qid, emb, ocr_text); found = True; break
-                    if not found: embeddings_cache.append((qid, emb, ocr_text))
+            # 3. Math OCR (건별 처리하되 GPU 확인)
+            for i, qid in enumerate(qids):
+                img = imgs[i]
+                emb = all_embs[i]
+                
+                try: 
+                    # pix2tex는 한 번에 하나씩 처리하되 GPU 가동 여부 체크
+                    ocr_text = math_ocr(img)
+                    if i % 10 == 0: print(f" [OCR Debug] {qid[:8]}: {ocr_text[:30]}...")
+                except Exception as o_e:
+                    print(f" [OCR Error] {o_e}")
+                    ocr_text = ""
 
-                    processed_in_session += 1
-                    print(f" [Progress] {processed_in_session} items processed. (QID: {qid[:8]})")
-                except Exception as e: print(f" [Error] {qid[:8]}: {e}")
-        print(">>> Task finished.")
+                # 4. DB 저장
+                conn_s = get_db_conn(); cur_s = conn_s.cursor()
+                cur_s.execute("""
+                    INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
+                    VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
+                    SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
+                """, (qid, emb.tolist(), ocr_text))
+                conn_s.commit(); cur_s.close(); conn_s.close()
+
+                # 5. 캐시 업데이트
+                found = False
+                for idx, (cid, cemb, ctxt) in enumerate(embeddings_cache):
+                    if cid == qid: embeddings_cache[idx] = (qid, emb, ocr_text); found = True; break
+                if not found: embeddings_cache.append((qid, emb, ocr_text))
+
+                processed_in_session += 1
+                if processed_in_session % 10 == 0:
+                    print(f" [Progress] {processed_in_session} items processed.")
+        
+        print(f">>> Task finished. Total {processed_in_session} items processed in this session.")
     except Exception as e: print(f">>> Critical Error: {e}")
     finally: update_in_progress = False
 
