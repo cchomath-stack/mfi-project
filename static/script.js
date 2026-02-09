@@ -1,4 +1,4 @@
-// --- State ---
+// --- State (Updated: 2026-02-09 15:05) ---
 let authToken = localStorage.getItem('authToken');
 let currentUser = null;
 let currentImageFile = null;
