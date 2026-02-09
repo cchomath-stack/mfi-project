@@ -330,14 +330,14 @@ async def get_update_stats(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin": raise HTTPException(status_code=403)
     try:
         conn = get_db_conn(); cur = conn.cursor()
-        # 완료수: 실제 OCR+임베딩이 끝난 수
-        cur.execute("SELECT COUNT(*) FROM mcat2.problem_image_embeddings WHERE ocr_text IS NOT NULL AND ocr_text != ''")
+        # 완료수: 신규 테이블(question_image_embeddings)에 등록된 수
+        cur.execute("SELECT COUNT(*) FROM mcat2.question_image_embeddings")
         done = cur.fetchone()[0]
-        # 전체수: 이미지가 존재하는 전체 문항
-        cur.execute("SELECT COUNT(*) FROM mcat2.problems_problem WHERE problem_image_url IS NOT NULL AND problem_image_url != ''")
+        # 전체수: question_render 테이블의 전체 유효 문항 수
+        cur.execute("SELECT COUNT(*) FROM mcat2.question_render WHERE preview_url IS NOT NULL AND preview_url != ''")
         total_p = cur.fetchone()[0]
         pending = max(0, total_p - done)
-        cur.execute("SELECT MAX(updated_at) FROM mcat2.problem_image_embeddings")
+        cur.execute("SELECT MAX(updated_at) FROM mcat2.question_image_embeddings")
         ldt = cur.fetchone()[0]
         cur.close(); conn.close()
 
