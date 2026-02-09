@@ -30,7 +30,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 # --- 설정 및 상수 (config.py로 이전) ---
-SQLITE_DB_PATH = "users.db"
+SQLITE_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.db")
 
 MODEL_ID = "openai/clip-vit-base-patch32"
 device = "cuda" if torch.cuda.is_available() else "cpu"
