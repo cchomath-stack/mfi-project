@@ -170,9 +170,16 @@ def startup_event():
         math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': device})
         print(f"[Startup] Pix2Text initialized successfully on {device}! (Object: {math_ocr})")
     except Exception as e:
-        print(f"[Startup] CRITICAL: Pix2Text Init Error: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"[Startup] WARNING: Pix2Text GPU Init failed ({type(e).__name__}): {e}")
+        print("[Startup] Attempting CPU Fallback...")
+        try:
+            # GPU 초기화 실패 시 CPU로 즉시 전환하여 서비스 가동 확보
+            math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': 'cpu'})
+            print("[Startup] Pix2Text initialized successfully on CPU!")
+        except Exception as e2:
+            print(f"[Startup] CRITICAL: Pix2Text CPU Init Error: {e2}")
+            import traceback
+            traceback.print_exc()
     sq_conn = get_sqlite_conn()
     # 테이블 확장 대응 (마이그레이션 스크립트로 처리했지만 안전을 위해 IF NOT EXISTS 유지)
     sq_conn.execute("""
