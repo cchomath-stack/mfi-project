@@ -45,43 +45,52 @@ def download_and_preprocess(qid_uuid, url):
 
 def run_local_indexing():
     processed_count = 0
-    batch_size = 20 # 5080이라면 배치 사이즈를 더 키워도 됩니다.
+    batch_size = 20 # 5080 기준 (더 키워도 됨)
     
     print("\n>>> Start Indexing Loop...")
     
     try:
+        # 0. 초기 통계 가져오기
+        conn_init = get_db_conn()
+        cur_init = conn_init.cursor()
+        cur_init.execute("SELECT COUNT(*) FROM mcat2.question_render WHERE preview_url IS NOT NULL AND preview_url != ''")
+        total_goal = cur_init.fetchone()[0]
+        cur_init.execute("SELECT COUNT(*) FROM mcat2.question_image_embeddings")
+        already_done = cur_init.fetchone()[0]
+        cur_init.close(); conn_init.close()
+        
+        remaining_total = total_goal - already_done
+        start_time = time.time()
+        
+        print(f" [Stats] Total Target: {total_goal:,} | Already Done: {already_done:,} | To Process: {remaining_total:,}")
+        
         while True:
-            # 1. 대상 데이터 가져오기 (원격 DB에서 미처리 건 추출)
-            conn = get_db_conn()
-            cur = conn.cursor()
+            # 1. 대상 데이터 가져오기
+            conn = get_db_conn(); cur = conn.cursor()
             cur.execute("""
                 SELECT q.question_id, q.preview_url FROM mcat2.question_render q
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
                 WHERE e.question_id IS NULL
                   AND q.preview_url IS NOT NULL AND q.preview_url != '' LIMIT %s
             """, (batch_size,))
-            rows = cur.fetchall()
-            cur.close()
-            conn.close()
+            rows = cur.fetchall(); cur.close(); conn.close()
             
             if not rows:
-                print(">>> All items processed or no more items found.")
+                print("\n>>> [Success] All items processed or no more items found.")
                 break
 
             batch_start = time.time()
             
-            # 2. 병렬 다운로드 (네트워크 병목 제거)
+            # 2. 병렬 다운로드
             with ThreadPoolExecutor(max_workers=10) as executor:
                 results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), rows))
             
             valid_items = [(qid, img) for qid, img in results if img is not None]
-            if not valid_items:
-                continue
+            if not valid_items: continue
 
-            qids = [x[0] for x in valid_items]
-            imgs = [x[1] for x in valid_items]
+            qids = [x[0] for x in valid_items]; imgs = [x[1] for x in valid_items]
 
-            # 3. CLIP Embedding (Batch)
+            # 3. CLIP Embedding
             inputs = clip_processor(images=imgs, return_tensors="pt", padding=True).to(DEVICE)
             with torch.no_grad():
                 out = clip_model.get_image_features(**inputs)
@@ -89,45 +98,41 @@ def run_local_indexing():
                 all_embs = feat.cpu().numpy()
                 all_embs = all_embs / (np.linalg.norm(all_embs, axis=1, keepdims=True) + 1e-8)
 
-            # 4. Math OCR (Pix2Text)
-            conn_u = get_db_conn()
-            cur_u = conn_u.cursor()
-            
+            # 4. Math OCR & DB Upload
+            conn_u = get_db_conn(); cur_u = conn_u.cursor()
             for i, qid in enumerate(qids):
-                img = imgs[i]
-                emb = all_embs[i]
-                
-                try:
-                    # RTX 5080 파워!
-                    outs = math_ocr.recognize(img)
+                try: 
+                    outs = math_ocr.recognize(imgs[i])
                     ocr_text = "\n".join([out['text'] for out in outs])
-                except Exception as e:
-                    print(f" [OCR Error] {qid}: {e}")
-                    ocr_text = ""
+                except: ocr_text = ""
 
-                # 5. DB 업로드 (원격 서버로 전송)
                 cur_u.execute("""
                     INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
                     VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
                     SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
-                """, (qid, emb.tolist(), ocr_text))
-                
+                """, (qid, all_embs[i].tolist(), ocr_text))
                 processed_count += 1
-                if processed_count % 10 == 0:
-                    print(f" [Progress] {processed_count} items uploaded... (Last: {qid[:8]})")
 
-            conn_u.commit()
-            cur_u.close()
-            conn_u.close()
+            conn_u.commit(); cur_u.close(); conn_u.close()
             
-            print(f" [Batch] {len(qids)} items done in {time.time()-batch_start:.2f}s")
-
+            # 5. 실시간 진행 상황 출력 (남은 개수, %, ETA)
+            elapsed = time.time() - start_time
+            avg_speed = processed_count / elapsed # items per sec
+            current_done = already_done + processed_count
+            pct = (current_done / total_goal) * 100
+            
+            remaining_this_run = remaining_total - processed_count
+            eta_seconds = remaining_this_run / avg_speed if avg_speed > 0 else 0
+            eta_hours = eta_seconds / 3600
+            
+            print(f"\r [Progress] {current_done:,}/{total_goal:,} ({pct:.2f}%) | Remaining: {remaining_this_run:,} | Avg: {avg_speed*60:.1f} it/m | ETA: {eta_hours:.1f} hours", end="")
+            
     except KeyboardInterrupt:
         print("\n>>> Interrupted by user.")
     except Exception as e:
         print(f"\n>>> Critical Error: {e}")
     finally:
-        print(f"\n>>> Local Indexing Finished. Total: {processed_count}")
+        print(f"\n>>> Local Indexing Finished. Total newly processed: {processed_count}")
 
 if __name__ == "__main__":
     run_local_indexing()
