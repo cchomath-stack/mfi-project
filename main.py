@@ -163,6 +163,8 @@ def initialize_ocr():
     global math_ocr
     if math_ocr is not None:
         return
+    
+    # [GPU 시도]
     print(f"\n[OCR] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
     try:
         # P2T 1.0: 텍스트와 수식을 동시에 인식하는 하이브리드 엔진
@@ -171,9 +173,11 @@ def initialize_ocr():
         print(f"[OCR] Pix2Text initialized successfully on {device}! (Object: {math_ocr})")
     except Exception as e:
         print(f"[OCR] WARNING: Pix2Text GPU Init failed ({type(e).__name__}): {e}")
-        print("[OCR] Attempting CPU Fallback...")
+        print("[OCR] Attempting CPU Fallback with Force...")
         try:
-            # GPU 초기화 실패 시 CPU로 즉시 전환하여 서비스 가동 확보
+            # [CPU 강제 전환] 환경 변수로 GPU를 아예 숨겨서 ONNX 에러 원천 차단
+            import os
+            os.environ["CUDA_VISIBLE_DEVICES"] = "-1" 
             math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': 'cpu'})
             print("[OCR] Pix2Text initialized successfully on CPU!")
         except Exception as e2:
