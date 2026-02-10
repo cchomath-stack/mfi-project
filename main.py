@@ -164,26 +164,22 @@ def initialize_ocr():
     if math_ocr is not None:
         return
     
-    # [GPU 시도]
-    print(f"\n[OCR] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
+    # [GPU 가속 환경 점검]
+    import onnxruntime as ort
+    providers = ort.get_available_providers()
+    print(f"\n[OCR] Available ONNX Providers: {providers}")
+    
+    print(f"[OCR] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
     try:
-        # P2T 1.0: 텍스트와 수식을 동시에 인식하는 하이브리드 엔진
-        print(f"[OCR] Pix2Text loading models on {device}...")
+        # P2T 1.0: 반드시 서버 GPU를 활용하도록 설정
         math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': device})
         print(f"[OCR] Pix2Text initialized successfully on {device}! (Object: {math_ocr})")
     except Exception as e:
-        print(f"[OCR] WARNING: Pix2Text GPU Init failed ({type(e).__name__}): {e}")
-        print("[OCR] Attempting CPU Fallback with Force...")
-        try:
-            # [CPU 강제 전환] 환경 변수로 GPU를 아예 숨겨서 ONNX 에러 원천 차단
-            import os
-            os.environ["CUDA_VISIBLE_DEVICES"] = "-1" 
-            math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': 'cpu'})
-            print("[OCR] Pix2Text initialized successfully on CPU!")
-        except Exception as e2:
-            print(f"[OCR] CRITICAL: Pix2Text CPU Init Error: {e2}")
-            import traceback
-            traceback.print_exc()
+        print(f"[OCR] CRITICAL: Pix2Text GPU Init failed: {type(e).__name__}: {e}")
+        print("[OCR] Check if CUDA libs are correctly mapped in Docker.")
+        # 더 이상 CPU로 도망가지 않고 에러를 명확히 남김
+        import traceback
+        traceback.print_exc()
 
 # --- 초기화 ---
 @app.on_event("startup")
