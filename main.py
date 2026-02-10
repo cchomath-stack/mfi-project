@@ -168,8 +168,8 @@ def load_gemini():
     if clean_key and clean_key != "YOUR_GEMINI_API_KEY_HERE":
         try:
             genai.configure(api_key=clean_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            # 시동 시 간단한 테스트 (선택 사항이지만 안전을 위해 연결만 확인)
+            # 404 에러 방지를 위해 latest 모델명 사용
+            model = genai.GenerativeModel('gemini-1.5-flash-latest')
             return model, clean_key
         except Exception as e:
             print(f" [Gemini 로드 에러] {e}")

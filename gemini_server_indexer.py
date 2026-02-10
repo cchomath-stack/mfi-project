@@ -22,8 +22,13 @@ MODEL_ID = "openai/clip-vit-base-patch32"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Gemini 초기화
-genai.configure(api_key=GEMINI_API_KEY)
-model_gemini = genai.GenerativeModel('gemini-1.5-flash')
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    # 404 방지를 위해 -latest 명시
+    model_gemini = genai.GenerativeModel('gemini-1.5-flash-latest')
+except Exception as e:
+    print(f"!!! Gemini Initialization Error: {e}")
+    exit(1)
 
 # CLIP 초기화
 print(f">>> [System] Loading CLIP on {DEVICE}...")
