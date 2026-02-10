@@ -166,10 +166,13 @@ def startup_event():
     print(f"\n[Startup] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
     try:
         # P2T 1.0: 텍스트와 수식을 동시에 인식하는 하이브리드 엔진
+        print(f"[Startup] Pix2Text loading models on {device}...")
         math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': device})
-        print(f"[Startup] Pix2Text initialized successfully on {device}!")
+        print(f"[Startup] Pix2Text initialized successfully on {device}! (Object: {math_ocr})")
     except Exception as e:
-        print(f"[Startup] CRITICAL: Pix2Text Init Error: {e}")
+        print(f"[Startup] CRITICAL: Pix2Text Init Error: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
     sq_conn = get_sqlite_conn()
     # 테이블 확장 대응 (마이그레이션 스크립트로 처리했지만 안전을 위해 IF NOT EXISTS 유지)
     sq_conn.execute("""
@@ -430,6 +433,14 @@ def background_update_embeddings():
             t3 = time.time()
             print(f" [Step 2/2] Running Hybrid Math OCR (P2T) for {len(qids)} items...")
             
+            # [Safety] 엔진이 아직 로딩 중이라면 잠시 대기
+            if math_ocr is None:
+                print("  [Warning] OCR engine not ready yet. Waiting 10s...")
+                time.sleep(10)
+                if math_ocr is None:
+                    print("  [Error] OCR engine still None. Skipping OCR for this batch.")
+                    continue
+
             # DB 연결 한 번만 해서 속도 개선
             conn_s = get_db_conn(); cur_s = conn_s.cursor()
             
