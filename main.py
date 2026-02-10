@@ -169,9 +169,10 @@ else:
 
 def initialize_ocr():
     global math_ocr
+    print(f"[OCR] Checking Gemini API Key: {GEMINI_API_KEY[:10]}...")
     if model_gemini is not None:
         print("[OCR] Using Gemini 1.5 Flash for high-precision OCR.")
-        math_ocr = "gemini" # 상태 표시용
+        math_ocr = "gemini" 
     else:
         print("[OCR] Warning: Gemini API Key not set. OCR features will be limited.")
 
@@ -403,7 +404,7 @@ def background_update_embeddings():
             cur.execute("""
                 SELECT q.question_id, q.preview_url FROM mcat2.question_render q
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
-                WHERE e.question_id IS NULL
+                WHERE (e.question_id IS NULL OR e.ocr_text IS NULL OR e.ocr_text = '' OR e.ocr_text LIKE '%?%')
                   AND q.preview_url IS NOT NULL AND q.preview_url != '' LIMIT 10
             """)
             rows = cur.fetchall(); cur.close(); conn.close()
