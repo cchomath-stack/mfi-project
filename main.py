@@ -159,27 +159,32 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
         raise HTTPException(status_code=401)
     return await _get_user_by_token(actual_token)
 
-# --- 초기화 ---
-@app.on_event("startup")
-def startup_event():
+def initialize_ocr():
     global math_ocr
-    print(f"\n[Startup] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
+    if math_ocr is not None:
+        return
+    print(f"\n[OCR] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
     try:
         # P2T 1.0: 텍스트와 수식을 동시에 인식하는 하이브리드 엔진
-        print(f"[Startup] Pix2Text loading models on {device}...")
+        print(f"[OCR] Pix2Text loading models on {device}...")
         math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': device})
-        print(f"[Startup] Pix2Text initialized successfully on {device}! (Object: {math_ocr})")
+        print(f"[OCR] Pix2Text initialized successfully on {device}! (Object: {math_ocr})")
     except Exception as e:
-        print(f"[Startup] WARNING: Pix2Text GPU Init failed ({type(e).__name__}): {e}")
-        print("[Startup] Attempting CPU Fallback...")
+        print(f"[OCR] WARNING: Pix2Text GPU Init failed ({type(e).__name__}): {e}")
+        print("[OCR] Attempting CPU Fallback...")
         try:
             # GPU 초기화 실패 시 CPU로 즉시 전환하여 서비스 가동 확보
             math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': 'cpu'})
-            print("[Startup] Pix2Text initialized successfully on CPU!")
+            print("[OCR] Pix2Text initialized successfully on CPU!")
         except Exception as e2:
-            print(f"[Startup] CRITICAL: Pix2Text CPU Init Error: {e2}")
+            print(f"[OCR] CRITICAL: Pix2Text CPU Init Error: {e2}")
             import traceback
             traceback.print_exc()
+
+# --- 초기화 ---
+@app.on_event("startup")
+def startup_event():
+    initialize_ocr()
     sq_conn = get_sqlite_conn()
     # 테이블 확장 대응 (마이그레이션 스크립트로 처리했지만 안전을 위해 IF NOT EXISTS 유지)
     sq_conn.execute("""
@@ -440,12 +445,12 @@ def background_update_embeddings():
             t3 = time.time()
             print(f" [Step 2/2] Running Hybrid Math OCR (P2T) for {len(qids)} items...")
             
-            # [Safety] 엔진이 아직 로딩 중이라면 잠시 대기
+            # [Safety] 엔진이 아직 로딩 중이라면 자가 치유 시도
             if math_ocr is None:
-                print("  [Warning] OCR engine not ready yet. Waiting 10s...")
-                time.sleep(10)
+                print("  [OCR] Engine is None. Attempting self-healing initialization...")
+                initialize_ocr()
                 if math_ocr is None:
-                    print("  [Error] OCR engine still None. Skipping OCR for this batch.")
+                    print("  [Error] OCR engine initialization failed inside task. Skipping this batch.")
                     continue
 
             # DB 연결 한 번만 해서 속도 개선
