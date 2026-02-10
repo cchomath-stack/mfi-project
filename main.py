@@ -461,10 +461,13 @@ def background_update_embeddings():
                 emb = all_embs[i]
                 t_ocr = time.time()
                 try: 
-                    # Pix2Text 1.0: recognize() returns list of dicts. 
-                    # We want to merge all identified text/formulas.
+                    # Pix2Text 1.0: recognize() returns list of dicts or a single string
                     outs = math_ocr.recognize(img)
-                    ocr_text = "\n".join([out['text'] for out in outs])
+                    if isinstance(outs, list):
+                        ocr_text = "\n".join([out.get('text', '') if isinstance(out, dict) else str(out) for out in outs])
+                    else:
+                        ocr_text = str(outs)
+                    
                     print(f"  > OCR Result ({qid[:8]} | {time.time()-t_ocr:.2f}s): {ocr_text[:30]}...")
                 except Exception as o_e:
                     print(f"  > OCR Error ({qid[:8]}): {o_e}")
@@ -519,7 +522,10 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
         # Pix2Text OCR for search query
         try:
             outs = math_ocr.recognize(img)
-            q_text_str = "\n".join([out['text'] for out in outs])
+            if isinstance(outs, list):
+                q_text_str = "\n".join([out.get('text', '') if isinstance(out, dict) else str(out) for out in outs])
+            else:
+                q_text_str = str(outs)
             q_text = set(filter(None, q_text_str.lower().split()))
         except Exception as e:
             print(f" [Debug] P2T OCR Error: {e}")

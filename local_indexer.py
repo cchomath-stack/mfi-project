@@ -103,8 +103,13 @@ def run_local_indexing():
             for i, qid in enumerate(qids):
                 try: 
                     outs = math_ocr.recognize(imgs[i])
-                    ocr_text = "\n".join([out['text'] for out in outs])
-                except: ocr_text = ""
+                    if isinstance(outs, list):
+                        ocr_text = "\n".join([out.get('text', '') if isinstance(out, dict) else str(out) for out in outs])
+                    else:
+                        ocr_text = str(outs)
+                except Exception as e:
+                    print(f" [OCR Error] {qid}: {e}")
+                    ocr_text = ""
 
                 cur_u.execute("""
                     INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
