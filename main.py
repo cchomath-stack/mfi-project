@@ -10,7 +10,7 @@ import torch
 import numpy as np
 import psycopg2
 import sqlite3
-# from pix2text import Pix2Text  # 중국어 기반 엔진 제거
+import google.generativeai as genai
 import requests
 import httpx
 import time
