@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# GPU 라이브러리 경로 강제 설정
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+# GPU 라이브러리 경로 강제 설정 (CUDA 11.8 및 cuDNN)
+ENV LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 
 RUN pip3 install --upgrade pip setuptools wheel
 

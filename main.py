@@ -166,18 +166,22 @@ def initialize_ocr():
     
     # [GPU 가속 환경 점검]
     import onnxruntime as ort
-    providers = ort.get_available_providers()
-    print(f"\n[OCR] Available ONNX Providers: {providers}")
+    avail_providers = ort.get_available_providers()
+    print(f"\n[OCR] Available ONNX Providers: {avail_providers}")
     
-    print(f"[OCR] Initializing Hybrid Math OCR (Pix2Text) on {device}...")
+    # torch가 CUDA를 보고 있어도, ONNX가 못 보면 'cpu'로 세팅해야 함
+    target_device = device
+    if device == 'cuda' and 'CUDAExecutionProvider' not in avail_providers:
+        print("[OCR] Warning: Torch sees CUDA but ONNX does not. Forcing 'cpu' to avoid ValueError.")
+        target_device = 'cpu'
+
+    print(f"[OCR] Initializing Hybrid Math OCR (Pix2Text) on {target_device}...")
     try:
-        # P2T 1.0: 반드시 서버 GPU를 활용하도록 설정
-        math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': device})
-        print(f"[OCR] Pix2Text initialized successfully on {device}! (Object: {math_ocr})")
+        # P2T 1.0: 레이아웃 분석 및 수식 인식을 포함하는 하이브리드 엔진
+        math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': target_device})
+        print(f"[OCR] Pix2Text initialized successfully on {target_device}! (Object: {math_ocr})")
     except Exception as e:
-        print(f"[OCR] CRITICAL: Pix2Text GPU Init failed: {type(e).__name__}: {e}")
-        print("[OCR] Check if CUDA libs are correctly mapped in Docker.")
-        # 더 이상 CPU로 도망가지 않고 에러를 명확히 남김
+        print(f"[OCR] CRITICAL: Pix2Text Init failed on {target_device}: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
 
