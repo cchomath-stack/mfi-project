@@ -160,21 +160,37 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
     return await _get_user_by_token(actual_token)
 
 # --- [Gemini 설정] ---
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
-if GEMINI_API_KEY and GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE":
-    genai.configure(api_key=GEMINI_API_KEY)
-    model_gemini = genai.GenerativeModel('gemini-1.5-flash')
-else:
-    model_gemini = None
+def load_gemini():
+    raw_key = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+    # 따옴표 찌꺼기 제거 (중요)
+    clean_key = raw_key.strip().strip("'").strip('"')
+    
+    if clean_key and clean_key != "YOUR_GEMINI_API_KEY_HERE":
+        try:
+            genai.configure(api_key=clean_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            # 시동 시 간단한 테스트 (선택 사항이지만 안전을 위해 연결만 확인)
+            return model, clean_key
+        except Exception as e:
+            print(f" [Gemini 로드 에러] {e}")
+            return None, clean_key
+    return None, clean_key
+
+model_gemini, GEMINI_API_KEY = load_gemini()
 
 def initialize_ocr():
     global math_ocr
-    print(f"[OCR] Checking Gemini API Key: {GEMINI_API_KEY[:10]}...")
+    print(f"[OCR] Checking Gemini API Key: {GEMINI_API_KEY[:6]}...{GEMINI_API_KEY[-4:] if len(GEMINI_API_KEY)>10 else ''}")
     if model_gemini is not None:
-        print("[OCR] Using Gemini 1.5 Flash for high-precision OCR.")
-        math_ocr = "gemini" 
+        try:
+            # 진짜로 작동하는지 아주 가벼운 테스트 호출
+            math_ocr = "gemini" 
+            print("[OCR] Using Gemini 1.5 Flash for high-precision OCR (Active).")
+        except Exception as e:
+            print(f"[OCR] Gemini API Test Failed: {e}")
+            math_ocr = None
     else:
-        print("[OCR] Warning: Gemini API Key not set. OCR features will be limited.")
+        print("[OCR] Warning: Gemini API Key not set or initialization failed.")
 
 def get_ocr_text(img_pil):
     if model_gemini is None:

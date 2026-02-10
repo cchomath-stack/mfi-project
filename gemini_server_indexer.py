@@ -11,7 +11,8 @@ from transformers import CLIPProcessor, CLIPModel
 from concurrent.futures import ThreadPoolExecutor
 
 # 환경변수에서 Gemini API Key와 DB 주소를 가져옵니다.
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+RAW_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+GEMINI_API_KEY = RAW_KEY.strip().strip("'").strip('"')
 DB_URL = os.getenv("DB_URL", "postgresql://db_member4:csm17csm17!@43.201.182.105:5432/tki")
 MODEL_ID = "openai/clip-vit-base-patch32"
 
@@ -19,8 +20,12 @@ MODEL_ID = "openai/clip-vit-base-patch32"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Gemini 설정
-genai.configure(api_key=GEMINI_API_KEY)
-model_gemini = genai.GenerativeModel('gemini-1.5-flash')
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model_gemini = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    print(f"!!! [Gemini Init Error] {e}")
+    model_gemini = None
 
 # CLIP 설정
 print(f">>> Loading CLIP on {DEVICE}...")
