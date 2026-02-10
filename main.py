@@ -176,6 +176,24 @@ def initialize_ocr():
     else:
         print("[OCR] Warning: Gemini API Key not set. OCR features will be limited.")
 
+def get_ocr_text(img_pil):
+    if model_gemini is None:
+        return ""
+    try:
+        # PIL 이미지를 바이트로 변환
+        buffered = BytesIO()
+        img_pil.save(buffered, format="JPEG")
+        img_bytes = buffered.getvalue()
+        
+        prompt = "이 수학 문제 이미지의 모든 텍스트를 한글로 정확히 읽어줘. 수학 공식은 반드시 LaTeX 형식($...$)을 사용해줘. 다른 설명은 하지 말고 인식된 텍스트만 출력해."
+        image_part = {"mime_type": "image/jpeg", "data": img_bytes}
+        
+        response = model_gemini.generate_content([prompt, image_part])
+        return response.text.strip()
+    except Exception as e:
+        print(f" [Gemini OCR 유틸 에러] {e}")
+        return ""
+
 # --- 초기화 ---
 @app.on_event("startup")
 def startup_event():
