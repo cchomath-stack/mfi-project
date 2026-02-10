@@ -148,23 +148,36 @@ def run_server_indexing():
                 emb = all_embs[i]
                 raw_data = raws[i]
                 
-                try: 
-                    prompt = "이 수학 문제 이미지의 모든 텍스트를 한글로 정확히 읽어줘. 수학 공식은 반드시 LaTeX 형식($...$)을 사용해줘. 다른 설명은 하지 말고 인식된 텍스트만 출력해."
-                    image_part = {"mime_type": "image/jpeg", "data": raw_data}
-                    
-                    response = model_gemini.generate_content([prompt, image_part])
-                    ocr_text = response.text.strip() if response and response.text else ""
-                    
-                    # DB 저장
-                    cur_u.execute("""
-                        INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
-                        VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
-                        SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
-                    """, (qid, emb.tolist(), ocr_text))
-                    processed_count += 1
-                except Exception as ocr_err:
-                    print(f"\n [!] OCR 실패 ({qid}): {ocr_err}")
-                    time.sleep(1) # API 할당량/에러 대응 대기
+                # 최대 3회 재시도 (할당량 초과 시 대기)
+                for attempt in range(3):
+                    try: 
+                        prompt = "이 수학 문제 이미지의 모든 텍스트를 한글로 정확히 읽어줘. 수학 공식은 반드시 LaTeX 형식($...$)을 사용해줘. 다른 설명은 하지 말고 인식된 텍스트만 출력해."
+                        image_part = {"mime_type": "image/jpeg", "data": raw_data}
+                        
+                        response = model_gemini.generate_content([prompt, image_part])
+                        ocr_text = response.text.strip() if response and response.text else ""
+                        
+                        # DB 저장
+                        cur_u.execute("""
+                            INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
+                            VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
+                            SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
+                        """, (qid, emb.tolist(), ocr_text))
+                        processed_count += 1
+                        break # 성공 시 루프 탈출
+                        
+                    except Exception as ocr_err:
+                        err_str = str(ocr_err)
+                        if "429" in err_str or "quota" in err_str.lower():
+                            wait_time = 30 * (attempt + 1)
+                            print(f"\n [!] 할당량 초과 (Quota Exceeded). {wait_time}초 후 재시도합니다... ({qid[:8]})")
+                            time.sleep(wait_time)
+                        else:
+                            print(f"\n [!] OCR 실패 ({qid}): {ocr_err}")
+                            break # 다른 에러는 다음 항목으로
+                
+                # 무료 티어 속도 제한 준수 (적절한 간격)
+                time.sleep(1.0)
 
             conn_u.commit(); cur_u.close(); conn_u.close()
             
