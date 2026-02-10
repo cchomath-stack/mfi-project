@@ -10,7 +10,7 @@ import torch
 import numpy as np
 import psycopg2
 import sqlite3
-from pix2text import Pix2Text
+# from pix2text import Pix2Text  # 중국어 기반 엔진 제거
 import requests
 import httpx
 import time
@@ -159,31 +159,21 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
         raise HTTPException(status_code=401)
     return await _get_user_by_token(actual_token)
 
+# --- [Gemini 설정] ---
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+if GEMINI_API_KEY and GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE":
+    genai.configure(api_key=GEMINI_API_KEY)
+    model_gemini = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    model_gemini = None
+
 def initialize_ocr():
     global math_ocr
-    if math_ocr is not None:
-        return
-    
-    # [GPU 가속 환경 점검]
-    import onnxruntime as ort
-    avail_providers = ort.get_available_providers()
-    print(f"\n[OCR] Available ONNX Providers: {avail_providers}")
-    
-    # torch가 CUDA를 보고 있어도, ONNX가 못 보면 'cpu'로 세팅해야 함
-    target_device = device
-    if device == 'cuda' and 'CUDAExecutionProvider' not in avail_providers:
-        print("[OCR] Warning: ONNX cannot find CUDA provider. Forcing 'cpu' for stable startup.")
-        target_device = 'cpu'
-
-    print(f"[OCR] Initializing Hybrid Math OCR (Pix2Text) on {target_device}...")
-    try:
-        # P2T 1.0: 생성자에도 device를 명시해야 내부 일꾼들이 딴짓을 안 함
-        math_ocr = Pix2Text(languages=['en', 'ko'], device=target_device, mfr_config={'device': target_device})
-        print(f"[OCR] Pix2Text initialized successfully on {target_device}! (Object: {math_ocr})")
-    except Exception as e:
-        print(f"[OCR] CRITICAL: Pix2Text Init failed on {target_device}: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+    if model_gemini is not None:
+        print("[OCR] Using Gemini 1.5 Flash for high-precision OCR.")
+        math_ocr = "gemini" # 상태 표시용
+    else:
+        print("[OCR] Warning: Gemini API Key not set. OCR features will be limited.")
 
 # --- 초기화 ---
 @app.on_event("startup")
@@ -447,7 +437,7 @@ def background_update_embeddings():
 
             # 3. Math OCR (건별 처리)
             t3 = time.time()
-            print(f" [Step 2/2] Running Hybrid Math OCR (P2T) for {len(qids)} items...")
+            print(f" [Step 2/2] Running Hybrid Math OCR (Gemini) for {len(qids)} items...")
             
             # [Safety] 엔진이 아직 로딩 중이라면 자가 치유 시도
             if math_ocr is None:
@@ -465,13 +455,7 @@ def background_update_embeddings():
                 emb = all_embs[i]
                 t_ocr = time.time()
                 try: 
-                    # Pix2Text 1.0: recognize() returns list of dicts or a single string
-                    outs = math_ocr.recognize(img)
-                    if isinstance(outs, list):
-                        ocr_text = "\n".join([out.get('text', '') if isinstance(out, dict) else str(out) for out in outs])
-                    else:
-                        ocr_text = str(outs)
-                    
+                    ocr_text = get_ocr_text(img)
                     print(f"  > OCR Result ({qid[:8]} | {time.time()-t_ocr:.2f}s): {ocr_text[:30]}...")
                 except Exception as o_e:
                     print(f"  > OCR Error ({qid[:8]}): {o_e}")
@@ -523,16 +507,12 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
                 q_emb = feat.cpu().numpy()[0] if torch.is_tensor(feat) else feat[0]
             q_emb = q_emb / (np.linalg.norm(q_emb) + 1e-8)
         
-        # Pix2Text OCR for search query
+        # Gemini OCR for search query
         try:
-            outs = math_ocr.recognize(img)
-            if isinstance(outs, list):
-                q_text_str = "\n".join([out.get('text', '') if isinstance(out, dict) else str(out) for out in outs])
-            else:
-                q_text_str = str(outs)
+            q_text_str = get_ocr_text(img)
             q_text = set(filter(None, q_text_str.lower().split()))
         except Exception as e:
-            print(f" [Debug] P2T OCR Error: {e}")
+            print(f" [Debug] Gemini OCR Error: {e}")
             q_text = set()
 
         scores = []

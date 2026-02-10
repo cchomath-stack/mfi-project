@@ -19,6 +19,7 @@ services:
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
       - DB_URL=${DB_URL}
       - SECRET_KEY=${SECRET_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     deploy:
       resources:
         reservations:

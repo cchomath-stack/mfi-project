@@ -10,9 +10,8 @@ import google.generativeai as genai
 from transformers import CLIPProcessor, CLIPModel
 from concurrent.futures import ThreadPoolExecutor
 
-# --- [설정] 여기에 Gemini API Key를 입력하세요 ---
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"
-# -----------------------------------------------
+# 환경변수에서 Gemini API Key와 DB 주소를 가져옵니다.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 
 # 서버 내부 DB 주소 (환경변수에서 가져오거나 직접 입력)
 DB_URL = os.getenv("DB_URL", "postgresql://db_member4:csm17csm17!@43.201.182.105:5432/tki")
