@@ -26,8 +26,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# [CRITICAL] 일반 onnxruntime과 충돌 방지: 기존 것 삭제 후 GPU 전용 설치
-RUN pip3 uninstall -y onnxruntime onnxruntime-gpu && \
+# [CRITICAL] 일반 onnxruntime과 충돌 방지: 기존 것 삭제(없어도 통과) 후 GPU 전용 설치
+RUN (pip3 uninstall -y onnxruntime onnxruntime-gpu || true) && \
     pip3 install --no-cache-dir -r requirements.txt
 
 # 5. 소스 코드 복사
