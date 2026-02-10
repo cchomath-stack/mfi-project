@@ -24,8 +24,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # Gemini 초기화
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    # 404 방지를 위해 -latest 명시
-    model_gemini = genai.GenerativeModel('gemini-1.5-flash-latest')
+    # 가용 목록에서 확인된 최신 모델 gemini-2.0-flash로 교체
+    model_gemini = genai.GenerativeModel('gemini-2.0-flash')
 except Exception as e:
     print(f"!!! Gemini Initialization Error: {e}")
     exit(1)
