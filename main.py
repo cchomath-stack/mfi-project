@@ -172,13 +172,13 @@ def initialize_ocr():
     # torch가 CUDA를 보고 있어도, ONNX가 못 보면 'cpu'로 세팅해야 함
     target_device = device
     if device == 'cuda' and 'CUDAExecutionProvider' not in avail_providers:
-        print("[OCR] Warning: Torch sees CUDA but ONNX does not. Forcing 'cpu' to avoid ValueError.")
+        print("[OCR] Warning: ONNX cannot find CUDA provider. Forcing 'cpu' for stable startup.")
         target_device = 'cpu'
 
     print(f"[OCR] Initializing Hybrid Math OCR (Pix2Text) on {target_device}...")
     try:
-        # P2T 1.0: 레이아웃 분석 및 수식 인식을 포함하는 하이브리드 엔진
-        math_ocr = Pix2Text(languages=['en', 'ko'], mfr_config={'device': target_device})
+        # P2T 1.0: 생성자에도 device를 명시해야 내부 일꾼들이 딴짓을 안 함
+        math_ocr = Pix2Text(languages=['en', 'ko'], device=target_device, mfr_config={'device': target_device})
         print(f"[OCR] Pix2Text initialized successfully on {target_device}! (Object: {math_ocr})")
     except Exception as e:
         print(f"[OCR] CRITICAL: Pix2Text Init failed on {target_device}: {type(e).__name__}: {e}")
