@@ -1,19 +1,5 @@
-// --- Visual Debugger Hook (Version 23:10) ---
-console.log(">>> [MFi] Script Version 23:10 Loaded");
-function screenLog(msg, type = 'log') {
-    const logs = document.getElementById('debug-logs');
-    if (logs) {
-        const div = document.createElement('div');
-        div.style.color = type === 'error' ? '#ff4d4d' : '#00ff00';
-        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logs.appendChild(div);
-        logs.scrollTop = logs.scrollHeight;
-    }
-}
-const _log = console.log;
-const _err = console.error;
-console.log = function (...args) { _log.apply(console, args); screenLog(args.join(' '), 'log'); };
-console.error = function (...args) { _err.apply(console, args); screenLog(args.join(' '), 'error'); };
+// --- App Initialization (Version 24:02) ---
+console.log(">>> [MFi] Script Version 24:02 Loaded");
 
 window.onerror = function (msg, url, lineNo, columnNo, error) {
     console.error(">>> [GLOBAL ERROR]", msg, "at", url, ":", lineNo);
