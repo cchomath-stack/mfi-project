@@ -120,9 +120,14 @@ function setupEventListeners() {
         for (let item of items) if (item.type.includes('image')) handleFile(item.getAsFile());
     });
 
-    document.getElementById('search-btn').addEventListener('click', runSearch);
-    document.getElementById('run-update-btn').addEventListener('click', runUpdate);
-    document.getElementById('stop-update-btn').addEventListener('click', runStopUpdate);
+    const sBtn = document.getElementById('search-btn');
+    if (sBtn) sBtn.addEventListener('click', runSearch);
+
+    const rBtn = document.getElementById('run-update-btn');
+    if (rBtn) rBtn.addEventListener('click', runUpdate);
+
+    const stBtn = document.getElementById('stop-update-btn');
+    if (stBtn) stBtn.addEventListener('click', runStopUpdate);
 
     // ★ 모달 이벤트 초기화 (is-visible 기반)
     const modal = document.getElementById('image-modal');
@@ -325,25 +330,47 @@ async function fetchStats() {
 }
 
 async function runUpdate() {
+    console.log(">>> [DEBUG] runUpdate called");
     const btn = document.getElementById('run-update-btn');
-    if (!btn) return;
+    if (!btn) {
+        console.error(">>> [DEBUG] run-update-btn not found!");
+        return;
+    }
+
+    console.log(">>> [DEBUG] Disabling button and starting fetch...");
     btn.disabled = true;
-    btn.innerText = "업데이트 진행 중...";
+    btn.innerText = "서버 응답 대기 중...";
+
     try {
+        if (!authToken) {
+            alert("인증 토큰이 없습니다. 다시 로그인해 주세요.");
+            logout();
+            return;
+        }
+
         const res = await fetch('/admin/update-embeddings', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+
+        console.log(">>> [DEBUG] Server response status:", res.status);
+
         if (res.ok) {
-            console.log("Update task triggered successfully.");
+            const data = await res.json();
+            console.log(">>> [DEBUG] Update started successfully:", data);
             await fetchStats();
         } else {
-            alert("이미 진행 중이거나 권한이 없습니다.");
-            btn.disabled = false; btn.innerText = "지금 업데이트 시작하기";
+            const errData = await res.json().catch(() => ({}));
+            console.error(">>> [DEBUG] Update start failed:", res.status, errData);
+            alert(`시작 실패 (코드: ${res.status}): ${errData.detail || '권한이 없거나 이미 진행 중입니다.'}`);
+            btn.disabled = false;
+            btn.innerText = "지금 업데이트 시작하기";
         }
     } catch (e) {
-        console.error("RunUpdate Failure:", e);
-        btn.disabled = false; btn.innerText = "지금 업데이트 시작하기";
+        console.error(">>> [DEBUG] runUpdate Exception:", e);
+        alert("서버 연결에 실패했습니다: " + e.message);
+        btn.disabled = false;
+        btn.innerText = "지금 업데이트 시작하기";
     }
 }
 
