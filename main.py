@@ -201,11 +201,11 @@ def get_ocr_text(img_pil):
         img_pil.save(buffered, format="JPEG")
         img_bytes = buffered.getvalue()
         
-        prompt = """수학 전문가처럼 이 이미지 속의 모든 텍스트를 읽어줘.
+        prompt = """수학 전문가로서 이 이미지의 모든 수학적 내용과 텍스트를 인식해줘.
 규칙:
-1. 모든 수학 공식과 기호는 반드시 LaTeX 형식($...$ 또는 $$...$$)으로 작성해.
-2. 한글 텍스트도 빠짐없이 정확하게 포함해.
-3. 결과물에 다른 부연 설명이나 코멘트 없이 인식된 텍스트만 깔끔하게 출력해."""
+1. 모든 수학 공식, 기호, 숫자는 반드시 LaTeX 형식($...$ 또는 $$...$$)으로 작성해. (예: $x^2 + y^2 = r^2$, $\frac{1}{2}$ 등)
+2. 한글 문장과 단어도 빠짐없이 정확하게 읽어줘.
+3. 다른 설명 없이 인식된 결과(LaTeX가 포함된 텍스트)만 출력해."""
         image_part = {"mime_type": "image/jpeg", "data": img_bytes}
         
         response = model_gemini.generate_content([prompt, image_part])
@@ -530,8 +530,8 @@ def background_update_embeddings():
                 """, (qid, emb.tolist(), ocr_text))
                 processed_in_session += 1
                 
-                # 무료 티어 배려 (간격 조정)
-                time.sleep(1.0)
+                # 유료 티어이므로 속도 제한 해제 (안정성을 위해 최소 대기)
+                time.sleep(0.1)
 
             conn_s.commit(); cur_s.close(); conn_s.close()
             print(f"  [Batch Total Time] {time.time()-batch_start:.2f}s (Avg: {(time.time()-batch_start)/len(qids):.2f}s/item)")

@@ -151,11 +151,11 @@ def run_server_indexing():
                 # 최대 3회 재시도 (할당량 초과 시 대기)
                 for attempt in range(3):
                     try: 
-                        prompt = """수학 전문가처럼 이 이미지 속의 모든 텍스트를 읽어줘.
+                        prompt = """수학 전문가로서 이 이미지의 모든 수학적 내용과 텍스트를 인식해줘.
 규칙:
-1. 모든 수학 공식과 기호는 반드시 LaTeX 형식($...$ 또는 $$...$$)으로 작성해.
-2. 한글 텍스트도 빠짐없이 정확하게 포함해.
-3. 결과물에 다른 부연 설명이나 코멘트 없이 인식된 텍스트만 깔끔하게 출력해."""
+1. 모든 수학 공식, 기호, 숫자는 반드시 LaTeX 형식($...$ 또는 $$...$$)으로 작성해. (예: $x^2 + y^2 = r^2$, $\frac{1}{2}$ 등)
+2. 한글 문장과 단어도 빠짐없이 정확하게 읽어줘.
+3. 다른 설명 없이 인식된 결과(LaTeX가 포함된 텍스트)만 출력해."""
                         image_part = {"mime_type": "image/jpeg", "data": raw_data}
                         
                         response = model_gemini.generate_content([prompt, image_part])
@@ -180,8 +180,8 @@ def run_server_indexing():
                             print(f"\n [!] OCR 실패 ({qid}): {ocr_err}")
                             break # 다른 에러는 다음 항목으로
                 
-                # 무료 티어 속도 제한 준수 (적절한 간격)
-                time.sleep(1.0)
+                # 유료 티어 속도 제한 해제
+                time.sleep(0.1)
 
             conn_u.commit(); cur_u.close(); conn_u.close()
             
