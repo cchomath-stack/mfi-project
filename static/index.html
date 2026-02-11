@@ -71,6 +71,9 @@
                 <div class="welcome-section">
                     <h2>반갑습니다, <span id="user-display-name">사용자</span>님</h2>
                     <p>수행하실 작업을 선택해주세요.</p>
+                    <button
+                        onclick="if(confirm('모든 캐시를 삭제하고 로그아웃하시겠습니까?')) { localStorage.clear(); location.reload(); }"
+                        class="btn-xs btn-secondary mt-10">시스템 초기화 (캐시 삭제)</button>
                 </div>
                 <div class="choice-container">
                     <div id="go-to-search" class="choice-card clickable">
@@ -197,8 +200,12 @@
                     </div>
 
                     <div class="update-controls">
-                        <button id="run-update-btn" class="btn-primary btn-large">지금 업데이트 시작하기</button>
-                        <button id="stop-update-btn" class="btn-danger btn-large mt-10 hidden">업데이트 중단하기</button>
+                        <button id="run-update-btn" class="btn-primary btn-large"
+                            onclick="if(window.runUpdate) window.runUpdate(); else alert('Script not loaded yet!');">지금
+                            업데이트 시작하기</button>
+                        <button id="stop-update-btn" class="btn-danger btn-large mt-10 hidden"
+                            onclick="if(window.runStopUpdate) window.runStopUpdate(); else alert('Script not loaded yet!');">업데이트
+                            중단하기</button>
                     </div>
                 </div>
             </main>
@@ -259,6 +266,18 @@
         <span class="modal-close" id="modal-close-btn">&times;</span>
         <img class="modal-content" id="modal-img">
         <div id="modal-caption"></div>
+    </div>
+
+    <!-- 디버그 패널 (화면에 로그 표시) -->
+    <div id="debug-panel"
+        style="position: fixed; bottom: 0; left: 0; right: 0; height: 150px; background: rgba(0,0,0,0.85); color: #00ff00; font-family: monospace; font-size: 11px; padding: 10px; overflow-y: auto; z-index: 99999; border-top: 2px solid #333; pointer-events: auto;">
+        <div
+            style="display: flex; justify-content: space-between; border-bottom: 1px solid #333; margin-bottom: 5px; padding-bottom: 2px;">
+            <span>[MFi VISUAL DEBUGGER]</span>
+            <button onclick="document.getElementById('debug-logs').innerHTML=''"
+                style="background: #444; color: #fff; border: none; cursor: pointer; padding: 2px 5px;">Clear</button>
+        </div>
+        <div id="debug-logs"></div>
     </div>
 
     <script src="script.js"></script>

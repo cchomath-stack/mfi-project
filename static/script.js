@@ -1,8 +1,22 @@
-// --- Global Error Handler & Version (Updated: 2026-02-11 23:05) ---
-console.log(">>> [MFi] Script Version 23:05 Loaded");
+// --- Visual Debugger Hook (Version 23:10) ---
+console.log(">>> [MFi] Script Version 23:10 Loaded");
+function screenLog(msg, type = 'log') {
+    const logs = document.getElementById('debug-logs');
+    if (logs) {
+        const div = document.createElement('div');
+        div.style.color = type === 'error' ? '#ff4d4d' : '#00ff00';
+        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logs.appendChild(div);
+        logs.scrollTop = logs.scrollHeight;
+    }
+}
+const _log = console.log;
+const _err = console.error;
+console.log = function (...args) { _log.apply(console, args); screenLog(args.join(' '), 'log'); };
+console.error = function (...args) { _err.apply(console, args); screenLog(args.join(' '), 'error'); };
+
 window.onerror = function (msg, url, lineNo, columnNo, error) {
     console.error(">>> [GLOBAL ERROR]", msg, "at", url, ":", lineNo);
-    alert("브라우저 에러가 발생했습니다: " + msg + "\n(새로고침 Ctrl+F5를 시도해 보세요)");
     return false;
 };
 
@@ -476,3 +490,7 @@ async function deleteUser(id) {
 window.approveUser = approveUser;
 window.confirmDeleteUser = confirmDeleteUser;
 window.openImageModal = openImageModal;
+window.runUpdate = runUpdate;
+window.runStopUpdate = runStopUpdate;
+window.logout = logout;
+window.showScreen = showScreen;

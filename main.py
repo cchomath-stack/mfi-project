@@ -450,6 +450,7 @@ async def get_update_stats(current_user: dict = Depends(get_current_user)):
 @app.post("/admin/update-embeddings")
 async def run_update(background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin": raise HTTPException(status_code=403)
+    print(f">>> [API] Received run_update request from {current_user['username']}")
     global update_in_progress, update_start_time, processed_in_session
     if update_in_progress: return {"message": "Active"}
     update_in_progress, update_start_time, processed_in_session = True, datetime.now(), 0
