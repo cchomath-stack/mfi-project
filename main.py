@@ -168,7 +168,7 @@ async def get_current_user_with_query_token(token: Optional[str] = None, header_
 
 # --- [Gemini 설정] ---
 def load_gemini():
-    raw_key = os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+    raw_key = config.GEMINI_API_KEY
     # 따옴표 찌꺼기 제거 (중요)
     clean_key = raw_key.strip().strip("'").strip('"')
     
