@@ -484,17 +484,22 @@ def background_update_embeddings():
             print(f" [Download Error] {qid_uuid}: {e}")
             return str(qid_uuid), None
 
+    processed_ids = set() # 이번 세션에서 이미 시도한 ID들 (실패 시 무한 루프 방지)
+    
     try:
         while True:
             if not update_in_progress: break
             conn = get_db_conn(); cur = conn.cursor()
-            # 10개씩 가져와서 UI 응답성 향상
+            # 10개씩 가져오되, 이번 세션에서 이미 건드린 건 제외
             cur.execute("""
                 SELECT q.question_id, q.preview_url FROM mcat2.question_render q
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
                 WHERE (e.question_id IS NULL OR e.ocr_text IS NULL OR e.ocr_text = '' OR e.ocr_text LIKE '%?%')
-                  AND q.preview_url IS NOT NULL AND q.preview_url != '' LIMIT 10
-            """)
+                  AND q.preview_url IS NOT NULL AND q.preview_url != ''
+                  AND q.question_id::text NOT IN %s
+                ORDER BY q.updated_at DESC
+                LIMIT 10
+            """, (tuple(processed_ids or ['none']),))
             rows = cur.fetchall(); cur.close(); conn.close()
             if not rows: break
 
@@ -564,13 +569,15 @@ def background_update_embeddings():
                             print(f"  > [OCR Error] {qid[:8]}: {o_e}")
                             break # 일반 에러는 중단
 
-                # 4. DB 저장
                 cur_s.execute("""
                     INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
                     VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
                     SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
                 """, (qid, emb.tolist(), ocr_text))
+                save_count = cur_s.rowcount
                 processed_in_session += 1
+                processed_ids.add(qid)
+                print(f"  > [DB Save] Success! Row affected: {save_count} (ID: {qid[:8]})")
                 
                 # 유료 티어이므로 속도 제한 해제 (안정성을 위해 최소 대기)
                 time.sleep(0.1)
