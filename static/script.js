@@ -150,11 +150,7 @@ function setupEventListeners() {
     const sBtn = document.getElementById('search-btn');
     if (sBtn) sBtn.addEventListener('click', runSearch);
 
-    const rBtn = document.getElementById('run-update-btn');
-    if (rBtn) rBtn.addEventListener('click', runUpdate);
-
-    const stBtn = document.getElementById('stop-update-btn');
-    if (stBtn) stBtn.addEventListener('click', runStopUpdate);
+    // ★ run-update-btn, stop-update-btn은 index.html의 onclick으로 통합하여 중복 로깅 방지
 
     // ★ 모달 이벤트 초기화 (is-visible 기반)
     const modal = document.getElementById('image-modal');
@@ -283,8 +279,30 @@ function renderResults(results) {
 }
 
 // --- Admin Update Polling ---
-function startPolling() { fetchStats(); updateInterval = setInterval(fetchStats, 3000); }
+function startPolling() { fetchStats(); fetchBackendLogs(); updateInterval = setInterval(() => { fetchStats(); fetchBackendLogs(); }, 3000); }
 function stopPolling() { clearInterval(updateInterval); }
+
+async function fetchBackendLogs() {
+    try {
+        const res = await fetch('/admin/debug-logs', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (!res.ok) return;
+        const logs = await res.json();
+        const logsDiv = document.getElementById('debug-logs');
+        if (logsDiv && logs.length > 0) {
+            // 백엔드 로그는 특수 표시
+            logs.forEach(msg => {
+                if (!document.getElementById(`log-${msg}`)) {
+                    const div = document.createElement('div');
+                    div.id = `log-${msg}`;
+                    div.style.color = "#a0ffb0"; // 약간 다른 연두색
+                    div.innerText = `[SERVER] ${msg}`;
+                    logsDiv.appendChild(div);
+                    logsDiv.scrollTop = logsDiv.scrollHeight;
+                }
+            });
+        }
+    } catch (e) { }
+}
 
 async function fetchStats() {
     try {

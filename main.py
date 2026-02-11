@@ -31,7 +31,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 # --- 설정 및 상수 (config.py로 이전) ---
-SQLITE_DB_PATH = "/app/users.db"
+SQLITE_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.db")
 
 MODEL_ID = "openai/clip-vit-base-patch32"
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -58,6 +58,12 @@ embeddings_cache = []
 update_in_progress = False
 update_start_time = None
 processed_in_session = 0
+backend_logs = deque(maxlen=50) # 최근 50개 로그 유지
+
+def log_backend(msg):
+    full_msg = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
+    print(full_msg)
+    backend_logs.append(full_msg)
 
 # --- Rate Limiter (Phase 6) ---
 class RateLimiter:
@@ -118,7 +124,7 @@ def get_password_hash(password): return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now() + (expires_delta or timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.ALGORITHM)
 
@@ -280,6 +286,8 @@ def startup_event():
                     (str(uuid.uuid4()), 'admin', get_password_hash('admin123!'), 'admin', 1))
     sq_conn.commit()
     sq_conn.close()
+    print("Application Startup: System Initializing...")
+    log_backend("Server started successfully. Ready for local verification.")
     print("Admin user initialized/reset.")
 
     print("Loading embeddings from question_image_embeddings...")
@@ -298,13 +306,21 @@ def startup_event():
 # --- API ---
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    log_backend(f"Login Attempt: {form_data.username}")
     conn = get_sqlite_conn()
     row = conn.execute("SELECT hashed_password, is_approved, role FROM web_users WHERE username=?", (form_data.username,)).fetchone()
     conn.close()
-    if not row or not verify_password(form_data.password, row['hashed_password']):
+    
+    if not row:
+        log_backend(f"Login Failed: User '{form_data.username}' not found in DB.")
         raise HTTPException(status_code=401)
     
-    # 일반 유저인데 승인되지 않은 경우 토큰 발급은 하되, 이후 API에서 403 처리됨 (또는 여기서 차칭 가능)
+    is_valid = verify_password(form_data.password, row['hashed_password'])
+    log_backend(f"Login Verify: {form_data.username} | Pass Match: {is_valid} | Approved: {row['is_approved']}")
+    
+    if not is_valid:
+        raise HTTPException(status_code=401)
+    
     return {"access_token": create_access_token({"sub": form_data.username}), "token_type": "bearer"}
 
 # --- Google OAuth Endpoints ---
@@ -447,6 +463,11 @@ async def get_update_stats(current_user: dict = Depends(get_current_user)):
         )
     except Exception as e: print(f"Stats Error: {e}"); raise HTTPException(status_code=500)
 
+@app.get("/admin/debug-logs")
+async def get_backend_logs(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin": raise HTTPException(status_code=403)
+    return list(backend_logs)
+
 @app.post("/admin/update-embeddings")
 async def run_update(background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin": raise HTTPException(status_code=403)
@@ -469,126 +490,106 @@ from concurrent.futures import ThreadPoolExecutor
 
 def background_update_embeddings():
     global update_in_progress, embeddings_cache, processed_in_session, update_start_time
-    print("\n>>> Optimized Background indexing task started (question_render).")
+    log_backend(">>> Optimized Background indexing task started.")
     update_start_time = datetime.now()
     
-    # 헬퍼: 이미지 다운로드 및 전처리
     def download_and_preprocess(qid_uuid, url):
         try:
             resp = requests.get(url, timeout=10); resp.raise_for_status()
             img = Image.open(BytesIO(resp.content)).convert("RGB")
-            # 너무 큰 이미지는 OCR 속도를 저하시키므로 리사이즈
             if max(img.size) > 1024:
                 img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
             return str(qid_uuid), img
         except Exception as e:
-            print(f" [Download Error] {qid_uuid}: {e}")
+            log_backend(f" [Download Error] {qid_uuid}: {e}")
             return str(qid_uuid), None
 
-    processed_ids = set() # 이번 세션에서 이미 시도한 ID들 (실패 시 무한 루프 방지)
+    processed_ids = set()
     
     try:
         while True:
-            if not update_in_progress: break
+            if not update_in_progress: 
+                log_backend(">>> Task stop requested by user.")
+                break
+            
+            log_backend(" [Task] Fetching next batch of 10 items...")
             conn = get_db_conn(); cur = conn.cursor()
-            # 10개씩 가져오되, 이번 세션에서 이미 건드린 건 제외
             cur.execute("""
                 SELECT q.question_id, q.preview_url FROM mcat2.question_render q
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
-                WHERE (e.question_id IS NULL OR e.ocr_text IS NULL OR e.ocr_text = '' OR e.ocr_text LIKE '%?%')
+                WHERE (e.question_id IS NULL OR e.ocr_text IS NULL OR e.ocr_text = '' OR e.ocr_text LIKE '%%?%%')
                   AND q.preview_url IS NOT NULL AND q.preview_url != ''
                   AND q.question_id::text NOT IN %s
                 ORDER BY q.updated_at DESC
                 LIMIT 10
             """, (tuple(processed_ids or ['none']),))
             rows = cur.fetchall(); cur.close(); conn.close()
-            if not rows: break
-
-            print(f"\n[Batch] Starting new batch of {len(rows)} items...")
-            batch_start = time.time()
             
-            # 1. 병렬 다운로드
-            t1 = time.time()
+            if not rows:
+                log_backend(" [Task] No more pending items found. Finishing.")
+                break
+
+            log_backend(f" [Batch] Processing {len(rows)} items...")
+            
             with ThreadPoolExecutor(max_workers=5) as executor:
                 results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), rows))
-            print(f"  [Time] Download/Resize total: {time.time()-t1:.2f}s")
             
             valid_items = [(qid, img) for qid, img in results if img is not None]
-            if not valid_items: continue
+            if not valid_items:
+                # 다음 번 시도를 위해 처리 완료 목록에는 넣어야 함 (무한 루프 방지)
+                for qid, _ in results: processed_ids.add(qid)
+                log_backend(" [Batch] No valid images in this batch. Skipping.")
+                continue
 
-            # 2. CLIP Batch Embedding
             qids = [x[0] for x in valid_items]
             imgs = [x[1] for x in valid_items]
             
-            t2 = time.time()
-            print(f" [Step 1/2] Computing CLIP embeddings for {len(qids)} items...")
             inputs = processor(images=imgs, return_tensors="pt", padding=True).to(device)
             with torch.no_grad():
                 out = model.get_image_features(**inputs)
                 feat = getattr(out, "image_embeds", getattr(out, "pooler_output", out))
                 all_embs = feat.cpu().numpy()
                 all_embs = all_embs / (np.linalg.norm(all_embs, axis=1, keepdims=True) + 1e-8)
-            print(f"  [Time] CLIP Batch: {time.time()-t2:.2f}s")
 
-            # 3. Math OCR (건별 처리)
-            t3 = time.time()
-            print(f" [Step 2/2] Running Hybrid Math OCR (Gemini) for {len(qids)} items...")
-            
-            # [Safety] 엔진이 아직 로딩 중이라면 자가 치유 시도
             if math_ocr is None:
-                print("  [OCR] Engine is None. Attempting self-healing initialization...")
+                log_backend(" [OCR] Re-initializing engine...")
                 initialize_ocr()
-                if math_ocr is None:
-                    print("  [Error] OCR engine initialization failed inside task. Skipping this batch.")
-                    continue
 
-            # DB 연결 한 번만 해서 속도 개선
             conn_s = get_db_conn(); cur_s = conn_s.cursor()
-            
             for i, qid in enumerate(qids):
-                # 루프 도중 중단 체크
                 if not update_in_progress: break
+                img = imgs[i]; emb = all_embs[i]; ocr_text = ""
                 
-                img = imgs[i]
-                emb = all_embs[i]
-                t_ocr = time.time()
-                ocr_text = ""
-                
-                # 최대 3회 재시도 (할당량 초과 시 대응)
-                for attempt in range(3):
+                for attempt in range(2):
                     try: 
                         ocr_text = get_ocr_text(img)
-                        print(f"  > OCR Result ({qid[:8]} | {time.time()-t_ocr:.2f}s): {ocr_text[:30]}...")
-                        break # 성공 시 탈출
+                        break 
                     except Exception as o_e:
-                        err_str = str(o_e).lower()
-                        if "429" in err_str or "quota" in err_str or "limit" in err_str:
-                            wait_sec = 30 * (attempt + 1)
-                            print(f"  > [Quota Error] Redrying in {wait_sec}s... ({qid[:8]})")
-                            time.sleep(wait_sec)
+                        if "quota" in str(o_e).lower():
+                            log_backend(f"  > [Quota] Retrying {qid[:8]}...")
+                            time.sleep(10)
                         else:
-                            print(f"  > [OCR Error] {qid[:8]}: {o_e}")
-                            break # 일반 에러는 중단
+                            log_backend(f"  > [OCR Error] {qid[:8]}: {o_e}")
+                            break
 
                 cur_s.execute("""
                     INSERT INTO mcat2.question_image_embeddings (question_id, image_embedding, ocr_text, updated_at)
                     VALUES (%s, %s, %s, NOW()) ON CONFLICT (question_id) DO UPDATE 
                     SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
                 """, (qid, emb.tolist(), ocr_text))
-                save_count = cur_s.rowcount
+                
                 processed_in_session += 1
                 processed_ids.add(qid)
-                print(f"  > [DB Save] Success! Row affected: {save_count} (ID: {qid[:8]})")
-                
-                # 유료 티어이므로 속도 제한 해제 (안정성을 위해 최소 대기)
-                time.sleep(0.1)
-
+            
             conn_s.commit(); cur_s.close(); conn_s.close()
-            print(f"  [Batch Total Time] {time.time()-batch_start:.2f}s (Avg: {(time.time()-batch_start)/len(qids):.2f}s/item)")
+            log_backend(f" [Batch] Step complete. Total session: {processed_in_session}")
+            time.sleep(0.5)
         
-        print(f">>> Task finished. Total {processed_in_session} items processed.")
-    except Exception as e: print(f">>> Critical Error: {e}")
-    finally: update_in_progress = False
+        log_backend(f">>> Task finished successfully. Items: {processed_in_session}")
+    except Exception as e: 
+        log_backend(f">>> [CRITICAL] Task died: {e}")
+    finally: 
+        update_in_progress = False
 
 @app.get("/api/v1/proxy-image")
 async def proxy_image(url: str, token: Optional[str] = None, current_user: dict = Depends(get_current_user_with_query_token)):
