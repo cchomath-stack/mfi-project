@@ -1,4 +1,11 @@
-// --- State (Updated: 2026-02-09 15:05) ---
+// --- Global Error Handler & Version (Updated: 2026-02-11 23:05) ---
+console.log(">>> [MFi] Script Version 23:05 Loaded");
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    console.error(">>> [GLOBAL ERROR]", msg, "at", url, ":", lineNo);
+    alert("브라우저 에러가 발생했습니다: " + msg + "\n(새로고침 Ctrl+F5를 시도해 보세요)");
+    return false;
+};
+
 let authToken = localStorage.getItem('authToken');
 let currentUser = null;
 let currentImageFile = null;
@@ -80,7 +87,8 @@ function logout() {
 
 // --- Events ---
 function setupEventListeners() {
-    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
 
     const googleBtn = document.getElementById('google-login-btn');
     if (googleBtn) googleBtn.addEventListener('click', () => {
@@ -92,9 +100,14 @@ function setupEventListeners() {
         if (btn) btn.addEventListener('click', logout);
     });
 
-    document.getElementById('go-to-search').addEventListener('click', () => showScreen('search'));
-    document.getElementById('go-to-update').addEventListener('click', () => showScreen('update'));
-    document.getElementById('go-to-user-mgmt').addEventListener('click', () => showScreen('userMgmt'));
+    const goSearch = document.getElementById('go-to-search');
+    if (goSearch) goSearch.addEventListener('click', () => showScreen('search'));
+
+    const goUpdate = document.getElementById('go-to-update');
+    if (goUpdate) goUpdate.addEventListener('click', () => showScreen('update'));
+
+    const goMgmt = document.getElementById('go-to-user-mgmt');
+    if (goMgmt) goMgmt.addEventListener('click', () => showScreen('userMgmt'));
 
     ['back-to-landing-from-search', 'back-to-landing-from-update', 'back-to-landing-from-mgmt'].forEach(id => {
         const btn = document.getElementById(id);
@@ -117,7 +130,7 @@ function setupEventListeners() {
     window.addEventListener('paste', (e) => {
         if (screens.search && screens.search.classList.contains('hidden')) return;
         const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let item of items) if (item.type.includes('image')) handleFile(item.getAsFile());
+        for (let item of items) if (item.type && item.type.includes('image')) handleFile(item.getAsFile());
     });
 
     const sBtn = document.getElementById('search-btn');
