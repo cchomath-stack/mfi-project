@@ -44,6 +44,10 @@ body::before {
     flex-direction: column;
 }
 
+.hidden {
+    display: none !important;
+}
+
 .mt-10 {
     margin-top: 10px !important;
 }

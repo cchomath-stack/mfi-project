@@ -1,0 +1,2797 @@
+-- mcat2.coupons definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.coupons;
+
+CREATE TABLE mcat2.coupons (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	code varchar(50) NOT NULL,
+	"name" varchar(100) NOT NULL,
+	description text NULL,
+	created_at timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	updated_at timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	status varchar(20) DEFAULT 'active'::character varying NULL,
+	CONSTRAINT coupons_code_key UNIQUE (code),
+	CONSTRAINT coupons_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.exam_range_semester definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.exam_range_semester;
+
+CREATE TABLE mcat2.exam_range_semester (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	status mcat2."feed_post_status" DEFAULT 'active'::mcat2.feed_post_status NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	modified timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	modified_user_id uuid NULL,
+	textbook_type mcat2."textbook_type_enum" DEFAULT 'MAIN'::mcat2.textbook_type_enum NULL,
+	school_id int4 NULL,
+	exam_id_semester varchar NULL,
+	exam_id jsonb NULL,
+	textbook_id jsonb NULL,
+	depth3_id jsonb NULL,
+	exam_range_detail text DEFAULT ''::text NULL,
+	reviewed_by uuid NULL,
+	reviewed_at timestamptz NULL,
+	CONSTRAINT exam_range_semester_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.exam_range_semester_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.exam_range_semester_history;
+
+CREATE TABLE mcat2.exam_range_semester_history (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	modified timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	user_id uuid NOT NULL,
+	status mcat2."exam_range_status_enum" DEFAULT 'request'::mcat2.exam_range_status_enum NOT NULL,
+	request_type mcat2."exam_request_type_enum" NOT NULL,
+	textbook_type mcat2."textbook_type_enum" DEFAULT 'MAIN'::mcat2.textbook_type_enum NULL,
+	school_id int4 NULL,
+	exam_id_semester varchar NULL,
+	textbook_id jsonb NULL,
+	user_select_subject jsonb NULL,
+	exam_range_detail text DEFAULT ''::text NULL,
+	reviewed_by uuid NULL,
+	reviewed_at timestamptz NULL,
+	description varchar NULL,
+	CONSTRAINT exam_range_semester_history_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.feeds_report_tags definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_report_tags;
+
+CREATE TABLE mcat2.feeds_report_tags (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title varchar(50) NOT NULL,
+	description text NULL,
+	CONSTRAINT feeds_report_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.feeds_tags definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_tags;
+
+CREATE TABLE mcat2.feeds_tags (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title varchar(50) NOT NULL,
+	description text NULL,
+	CONSTRAINT feeds_tags_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.global_calendar definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.global_calendar;
+
+CREATE TABLE mcat2.global_calendar (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	"year" int4 NOT NULL,
+	grade1_attendance bool NOT NULL,
+	grade2_attendance bool NOT NULL,
+	grade3_attendance bool NOT NULL,
+	start_date date NOT NULL,
+	end_date date NOT NULL,
+	edu_office varchar NOT NULL,
+	event_name varchar NULL,
+	CONSTRAINT global_calendar_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.nickname_adjectives definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.nickname_adjectives;
+
+CREATE TABLE mcat2.nickname_adjectives (
+	id serial4 NOT NULL,
+	word text NOT NULL,
+	CONSTRAINT nickname_adjectives_pkey PRIMARY KEY (id),
+	CONSTRAINT nickname_adjectives_word_key UNIQUE (word)
+);
+
+
+-- mcat2.nickname_nouns definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.nickname_nouns;
+
+CREATE TABLE mcat2.nickname_nouns (
+	id serial4 NOT NULL,
+	word text NOT NULL,
+	CONSTRAINT nickname_nouns_pkey PRIMARY KEY (id),
+	CONSTRAINT nickname_nouns_word_key UNIQUE (word)
+);
+
+
+-- mcat2.notification_types definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.notification_types;
+
+CREATE TABLE mcat2.notification_types (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	"key" varchar NOT NULL,
+	description text NULL,
+	CONSTRAINT notification_types_key_key UNIQUE (key),
+	CONSTRAINT notification_types_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2."plans" definition
+
+-- Drop table
+
+-- DROP TABLE mcat2."plans";
+
+CREATE TABLE mcat2."plans" (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(50) NOT NULL,
+	price int4 NOT NULL,
+	description text NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT plans_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.problems_curriculum definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_curriculum;
+
+CREATE TABLE mcat2.problems_curriculum (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title_for_product varchar(50) NOT NULL,
+	title_for_csm varchar(50) NOT NULL,
+	description varchar(255) NULL,
+	"order" int4 NOT NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT problems_curriculum_pkey_2 PRIMARY KEY (id)
+);
+
+
+-- mcat2.problems_problem definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_problem;
+
+CREATE TABLE mcat2.problems_problem (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp NOT NULL,
+	modified timestamp NOT NULL,
+	problem_order int4 NOT NULL,
+	problem_image_url varchar(255) NULL,
+	problem_html text NOT NULL,
+	solution_html text NOT NULL,
+	answer_type varchar(50) NULL,
+	problem_type varchar(50) NULL,
+	difficulty_level int4 NOT NULL,
+	last_depth4_id uuid NOT NULL,
+	is_active bool NOT NULL,
+	is_show_user_grade int4 NULL,
+	tags varchar(255) NULL,
+	description varchar(255) NULL,
+	answer varchar(50) NULL,
+	problem_text text NULL,
+	solution_text text NULL,
+	system_id varchar NULL,
+	CONSTRAINT problems_problem_id_unique UNIQUE (id),
+	CONSTRAINT problems_problem_id_with_system_id_unique UNIQUE (id, system_id)
+);
+
+
+-- mcat2.problems_problem_with_source_bak_20260128 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_problem_with_source_bak_20260128;
+
+CREATE TABLE mcat2.problems_problem_with_source_bak_20260128 (
+	id uuid NULL,
+	created timestamp NULL,
+	modified timestamp NULL,
+	problem_id uuid NULL,
+	source_id uuid NULL,
+	system_id varchar NULL
+);
+
+
+-- mcat2.problems_source definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_source;
+
+CREATE TABLE mcat2.problems_source (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (now() AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (now() AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title varchar(50) NULL,
+	description varchar(255) NULL,
+	origin_filepath varchar(255) NULL,
+	origin_filename varchar(255) NULL,
+	source_type varchar(50) NULL,
+	exam_year int4 NULL,
+	exam_month int4 NULL,
+	exam_grade varchar(10) NULL,
+	exam_semester varchar(10) NULL,
+	exam_type varchar(10) NULL,
+	school_id uuid NULL,
+	category1 varchar NULL,
+	category2 varchar NULL,
+	category3 varchar NULL,
+	category4 varchar NULL,
+	category5 varchar NULL,
+	content_id varchar NULL,
+	depth0_id uuid NULL,
+	CONSTRAINT source_id_unique UNIQUE (id)
+);
+
+
+-- mcat2.problems_source_1 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_source_1;
+
+CREATE TABLE mcat2.problems_source_1 (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (now() AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (now() AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title varchar(50) NULL,
+	description varchar(255) NULL,
+	origin_filepath varchar(255) NULL,
+	origin_filename varchar(255) NULL,
+	source_type varchar(50) NULL,
+	exam_year int4 NULL,
+	exam_month int4 NULL,
+	exam_grade varchar(10) NULL,
+	exam_semester varchar(10) NULL,
+	exam_type varchar(10) NULL,
+	school_id uuid NULL,
+	category1 varchar NULL,
+	category2 varchar NULL,
+	category3 varchar NULL,
+	category4 varchar NULL,
+	category5 varchar NULL,
+	content_id varchar NULL,
+	CONSTRAINT source_id_unique_3 UNIQUE (id)
+);
+
+
+-- mcat2.problems_source_backup definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_source_backup;
+
+CREATE TABLE mcat2.problems_source_backup (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (now() AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (now() AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title varchar(50) NULL,
+	description varchar(255) NULL,
+	origin_filepath varchar(255) NULL,
+	origin_filename varchar(255) NULL,
+	source_type varchar(50) NULL,
+	exam_year int4 NULL,
+	exam_month int4 NULL,
+	exam_grade varchar(10) NULL,
+	exam_semester varchar(10) NULL,
+	exam_type varchar(10) NULL,
+	school_id uuid NULL,
+	category1 varchar NULL,
+	category2 varchar NULL,
+	category3 varchar NULL,
+	category4 varchar NULL,
+	category5 varchar NULL,
+	content_id varchar NULL,
+	CONSTRAINT source_id_unique_2 UNIQUE (id)
+);
+
+
+-- mcat2.questions definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.questions;
+
+CREATE TABLE mcat2.questions (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	mongo_id varchar NULL,
+	system_id varchar NULL,
+	content_id varchar NULL,
+	dropbox_id varchar NULL,
+	order_no int4 NULL,
+	"level" int4 NULL,
+	origin_file_name text NULL,
+	origin_file_path text NULL,
+	public bool NULL,
+	is_active bool NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	CONSTRAINT questions_pkey PRIMARY KEY (id),
+	CONSTRAINT questions_system_id_unique UNIQUE (system_id)
+);
+CREATE INDEX idx_q_cid ON mcat2.questions USING btree (content_id);
+CREATE INDEX idx_q_dropboxid ON mcat2.questions USING btree (dropbox_id);
+CREATE INDEX idx_q_mid ON mcat2.questions USING btree (mongo_id);
+CREATE INDEX idx_q_sysid ON mcat2.questions USING btree (system_id);
+
+
+-- mcat2.school_info definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_info;
+
+CREATE TABLE mcat2.school_info (
+	id serial4 NOT NULL,
+	school_name varchar NULL,
+	school_type varchar NULL,
+	edu_office varchar NULL,
+	establishment_type varchar NULL,
+	zip_code varchar NULL,
+	address varchar NULL,
+	phone varchar NULL,
+	hs_classification varchar NULL,
+	founded_date date NULL,
+	status varchar NULL,
+	school_uuid uuid NULL,
+	address_legacy varchar NULL,
+	created timestamp DEFAULT now() NULL,
+	CONSTRAINT school_info_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.school_tags definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_tags;
+
+CREATE TABLE mcat2.school_tags (
+	id serial4 NOT NULL,
+	"name" varchar NOT NULL,
+	"type" mcat2."school_tag_type" NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NULL,
+	CONSTRAINT school_tags_name_key UNIQUE (name),
+	CONSTRAINT school_tags_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.storage_blobs definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.storage_blobs;
+
+CREATE TABLE mcat2.storage_blobs (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	storage_key text NOT NULL,
+	sha256 varchar(64) NOT NULL,
+	size_bytes int8 NOT NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT storage_blobs_pkey PRIMARY KEY (id),
+	CONSTRAINT uq_storage_blobs_sha_size UNIQUE (sha256, size_bytes)
+);
+CREATE INDEX idx_storage_blobs_sha ON mcat2.storage_blobs USING btree (sha256);
+
+
+-- mcat2.temp_problem_book_index definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_problem_book_index;
+
+CREATE TABLE mcat2.temp_problem_book_index (
+	idx int4 NULL,
+	title varchar(500) NULL,
+	publisher varchar(500) NULL,
+	category0 varchar(500) NULL,
+	category1 varchar(500) NULL,
+	category2 varchar(500) NULL,
+	category3 varchar(500) NULL,
+	start_page int4 NULL,
+	end_page int4 NULL
+);
+
+
+-- mcat2.temp_schools_cnt_student definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_schools_cnt_student;
+
+CREATE TABLE mcat2.temp_schools_cnt_student (
+	시도교육청 varchar(50) NULL,
+	교육지원청 varchar(50) NULL,
+	지역 varchar(50) NULL,
+	"정보공시 학교코드" varchar(50) NULL,
+	학교명 varchar(50) NULL,
+	학교급코드 int4 NULL,
+	설립구분 varchar(50) NULL,
+	제외여부 varchar(50) NULL,
+	제외사유 varchar(50) NULL,
+	"1학년 학급수" int4 NULL,
+	"1학년 학생수" int4 NULL,
+	"1학년 학급당 학생수" float4 NULL,
+	"2학년 학급수" int4 NULL,
+	"2학년 학생수" int4 NULL,
+	"2학년 학급당 학생수" float4 NULL,
+	"3학년 학급수" int4 NULL,
+	"3학년 학생수" int4 NULL,
+	"3학년 학급당 학생수" float4 NULL,
+	"특수학급 학급수" int4 NULL,
+	"특수학급 학생수" int4 NULL,
+	"특수학급 학급당 학생수" float4 NULL,
+	"순회학급 학급수" int4 NULL,
+	"순회학급 학생수" int4 NULL,
+	"순회학급 학급당 학생수" float4 NULL,
+	"학급수(계)" int4 NULL,
+	"학생수(계)" int4 NULL,
+	"학급당 학생수(계)" float4 NULL,
+	교사수 int4 NULL,
+	"수업교원 1인당 학생수" float4 NULL
+);
+
+
+-- mcat2.temp_schools_school definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_schools_school;
+
+CREATE TABLE mcat2.temp_schools_school (
+	title varchar(50) NULL,
+	established_at varchar(50) NULL,
+	established_by varchar(50) NULL,
+	school_branch varchar(50) NULL,
+	location_legacy varchar(50) NULL,
+	location_roadname varchar(50) NULL,
+	category1 varchar(50) NULL,
+	category2 varchar(50) NULL,
+	category3 varchar(50) NULL,
+	category4 varchar(50) NULL,
+	modified varchar(50) NULL,
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	status_proportion_2024 bool DEFAULT false NULL,
+	status_proportion_2023 bool DEFAULT false NULL,
+	status_proportion_2022 bool DEFAULT false NULL,
+	status_distribution_2024 bool DEFAULT false NULL,
+	status_distribution_2023 bool DEFAULT false NULL,
+	status_distribution_2022 bool DEFAULT false NULL,
+	status_graduate_career_2024 bool DEFAULT false NULL,
+	CONSTRAINT school_id_pkey UNIQUE (id)
+);
+
+
+-- mcat2.temp_solution_data definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_solution_data;
+
+CREATE TABLE mcat2.temp_solution_data (
+	system_id varchar NOT NULL,
+	solution_html text NULL
+);
+
+
+-- mcat2.temp_textbook_with_school definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_textbook_with_school;
+
+CREATE TABLE mcat2.temp_textbook_with_school (
+	origin_file_name varchar(500) NULL,
+	grade int4 NULL,
+	semester int4 NULL,
+	exam_type varchar(500) NULL,
+	category0 varchar(500) NULL,
+	school_title varchar(500) NULL,
+	subject varchar(500) NULL,
+	publisher varchar(500) NULL,
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL
+);
+
+
+-- mcat2.temp_textbooks_index definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_textbooks_index;
+
+CREATE TABLE mcat2.temp_textbooks_index (
+	publisher varchar(500) NULL,
+	depth0 varchar(500) NULL,
+	depth1 varchar(500) NULL,
+	depth2 varchar(500) NULL,
+	depth3 varchar(500) NULL,
+	start_page varchar(500) NULL,
+	end_page int4 NULL
+);
+
+
+-- mcat2.test_similar_problems definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.test_similar_problems;
+
+CREATE TABLE mcat2.test_similar_problems (
+	test_id varchar(50) NOT NULL,
+	created_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NULL,
+	test_name varchar(255) NULL,
+	preview_url text NULL,
+	"type" varchar(50) NOT NULL,
+	CONSTRAINT test_similar_problems_pkey PRIMARY KEY (test_id)
+);
+
+
+-- mcat2.test_table definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.test_table;
+
+CREATE TABLE mcat2.test_table (
+	id serial4 NOT NULL,
+	username varchar(50) NOT NULL,
+	email varchar(100) NOT NULL,
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT test_table_email_key UNIQUE (email),
+	CONSTRAINT test_table_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.user_email_verification definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_email_verification;
+
+CREATE TABLE mcat2.user_email_verification (
+	id uuid NOT NULL,
+	email varchar(255) NOT NULL,
+	code varchar(10) NOT NULL,
+	status mcat2."user_email_verification_status_enum" DEFAULT 'created'::mcat2.user_email_verification_status_enum NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	expires_at timestamptz NOT NULL,
+	description varchar(255) NULL,
+	CONSTRAINT user_email_verification_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.user_nickname_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_nickname_history;
+
+CREATE TABLE mcat2.user_nickname_history (
+	id bigserial NOT NULL,
+	user_id uuid NOT NULL,
+	old_nickname varchar(100) NOT NULL,
+	new_nickname varchar(100) NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	CONSTRAINT user_nickname_history_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.user_password_reset_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_password_reset_history;
+
+CREATE TABLE mcat2.user_password_reset_history (
+	id bigserial NOT NULL,
+	user_id uuid NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	CONSTRAINT user_password_reset_history_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.users definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.users;
+
+CREATE TABLE mcat2.users (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	mail varchar(255) NOT NULL,
+	"password" varchar(255) NULL,
+	"name" varchar(100) NULL,
+	joined_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	last_logined_at timestamptz NULL,
+	nickname varchar(100) NULL,
+	grade varchar(20) DEFAULT 'Member-Free'::character varying NULL,
+	phone_number varchar(20) NULL,
+	sign_up_type varchar(20) DEFAULT 'email'::character varying NULL,
+	status varchar(20) DEFAULT 'active'::character varying NULL,
+	marketing_type bool DEFAULT false NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	profile_image_url text NULL,
+	bio text NULL,
+	public_id bigserial NULL,
+	"location" varchar(255) NULL,
+	mail_verified bool DEFAULT false NULL,
+	phone_number_verified bool DEFAULT false NULL,
+	name_verified bool DEFAULT false NULL,
+	mail_history jsonb NULL,
+	CONSTRAINT users_pkey PRIMARY KEY (id),
+	CONSTRAINT users_public_id_key UNIQUE (public_id)
+);
+
+-- Table Triggers
+
+create trigger trigger_update_updated_at before
+update
+    on
+    mcat2.users for each row execute function mcat2.update_updated_at_column();
+
+
+-- mcat2.api_keys definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.api_keys;
+
+CREATE TABLE mcat2.api_keys (
+	id uuid NOT NULL,
+	user_id uuid NOT NULL,
+	api_key varchar NOT NULL,
+	created_at timestamp DEFAULT now() NOT NULL,
+	expires_at timestamp NULL,
+	is_active bool DEFAULT true NOT NULL,
+	last_used_at timestamp NULL,
+	CONSTRAINT api_keys_pkey PRIMARY KEY (id),
+	CONSTRAINT api_keys_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.api_usage definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.api_usage;
+
+CREATE TABLE mcat2.api_usage (
+	id uuid NOT NULL,
+	api_key_id uuid NOT NULL,
+	service_name varchar NOT NULL,
+	"timestamp" timestamp DEFAULT now() NOT NULL,
+	status_code int4 NOT NULL,
+	response_time float8 NOT NULL,
+	payload_size int4 NULL,
+	metadata json NULL,
+	CONSTRAINT api_usage_pkey PRIMARY KEY (id),
+	CONSTRAINT api_usage_api_key_id_fkey FOREIGN KEY (api_key_id) REFERENCES mcat2.api_keys(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.badge definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.badge;
+
+CREATE TABLE mcat2.badge (
+	badge_id uuid DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(100) NOT NULL,
+	description text NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	created_by uuid NOT NULL,
+	memo text NULL,
+	image_url varchar(255) NULL,
+	grant_method mcat2."grant_method_type" NOT NULL,
+	is_active bool DEFAULT true NOT NULL,
+	CONSTRAINT badge_pkey PRIMARY KEY (badge_id),
+	CONSTRAINT fk_badge_created_by FOREIGN KEY (created_by) REFERENCES mcat2.users(id)
+);
+
+
+-- mcat2.coupon_issued definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.coupon_issued;
+
+CREATE TABLE mcat2.coupon_issued (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	user_id uuid NOT NULL,
+	coupon_id uuid NOT NULL,
+	issued_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	expired_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	used_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	status varchar(20) DEFAULT 'issued'::character varying NULL,
+	CONSTRAINT coupon_issued_pkey PRIMARY KEY (id),
+	CONSTRAINT coupon_issued_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES mcat2.coupons(id) ON DELETE CASCADE,
+	CONSTRAINT coupon_issued_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.exam_meta definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.exam_meta;
+
+CREATE TABLE mcat2.exam_meta (
+	id varchar NOT NULL,
+	school_id int4 NOT NULL,
+	"year" int4 NULL,
+	grade int2 NULL,
+	semester int2 NULL,
+	exam_type mcat2."exam_type_enum" NULL,
+	subject varchar NULL,
+	CONSTRAINT exam_meta_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_school FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.feeds_follow_map definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_follow_map;
+
+CREATE TABLE mcat2.feeds_follow_map (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	modified timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	follower_id uuid NOT NULL,
+	followee_id uuid NOT NULL,
+	CONSTRAINT feeds_follow_map_pkey PRIMARY KEY (id),
+	CONSTRAINT unique_follow UNIQUE (follower_id, followee_id),
+	CONSTRAINT fk_followee_id FOREIGN KEY (followee_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_follower_id FOREIGN KEY (follower_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_like definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_like;
+
+CREATE TABLE mcat2.feeds_like (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	user_id uuid NOT NULL,
+	target_type mcat2."reaction_target_type" NOT NULL,
+	target_id uuid NOT NULL,
+	CONSTRAINT feeds_like_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_post definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_post;
+
+CREATE TABLE mcat2.feeds_post (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	modified timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	status mcat2."feed_post_status" DEFAULT 'active'::mcat2.feed_post_status NOT NULL,
+	user_id uuid NOT NULL,
+	"content" text NULL,
+	view_count int4 DEFAULT 0 NOT NULL,
+	title varchar(255) NULL,
+	category mcat2."feed_post_category" NULL,
+	CONSTRAINT feeds_post_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+CREATE INDEX idx_feeds_post_content_trgm ON mcat2.feeds_post USING gin (content mcat2.gin_trgm_ops);
+CREATE INDEX idx_feeds_post_stats ON mcat2.feeds_post USING btree (status, created DESC, view_count DESC);
+CREATE INDEX idx_feeds_post_title_trgm ON mcat2.feeds_post USING gin (title mcat2.gin_trgm_ops);
+CREATE INDEX idx_feeds_post_view_count ON mcat2.feeds_post USING btree (view_count);
+
+
+-- mcat2.feeds_post_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_post_history;
+
+CREATE TABLE mcat2.feeds_post_history (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	post_id uuid NOT NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	user_id uuid NULL,
+	old_title varchar(255) NULL,
+	old_content text NULL,
+	CONSTRAINT feeds_post_history_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_post FOREIGN KEY (post_id) REFERENCES mcat2.feeds_post(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE SET NULL
+);
+
+
+-- mcat2.feeds_report definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_report;
+
+CREATE TABLE mcat2.feeds_report (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	reported_by uuid NOT NULL,
+	post_id uuid NOT NULL,
+	report_tags_id uuid NOT NULL,
+	description text NULL,
+	status mcat2."feed_post_status" DEFAULT 'reported'::mcat2.feed_post_status NULL,
+	reviewed_by uuid NULL,
+	reviewed_at timestamptz NULL,
+	CONSTRAINT feeds_report_pkey1 PRIMARY KEY (id),
+	CONSTRAINT fk_post_id FOREIGN KEY (post_id) REFERENCES mcat2.feeds_post(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_report_tags_id FOREIGN KEY (report_tags_id) REFERENCES mcat2.feeds_report_tags(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_reported_by FOREIGN KEY (reported_by) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_scrap definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_scrap;
+
+CREATE TABLE mcat2.feeds_scrap (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	user_id uuid NOT NULL,
+	post_id uuid NOT NULL,
+	CONSTRAINT feeds_scrap_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_post_id FOREIGN KEY (post_id) REFERENCES mcat2.feeds_post(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_tag_map definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_tag_map;
+
+CREATE TABLE mcat2.feeds_tag_map (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	post_id uuid NOT NULL,
+	tag_id uuid NOT NULL,
+	description text NULL,
+	CONSTRAINT feeds_tag_map_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_post_id FOREIGN KEY (post_id) REFERENCES mcat2.feeds_post(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_tag_id FOREIGN KEY (tag_id) REFERENCES mcat2.feeds_tags(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_tags_search_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_tags_search_history;
+
+CREATE TABLE mcat2.feeds_tags_search_history (
+	id serial4 NOT NULL,
+	user_id uuid NOT NULL,
+	tag_id uuid NOT NULL,
+	searched_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	CONSTRAINT feeds_tags_search_history_pkey PRIMARY KEY (id),
+	CONSTRAINT feeds_tags_search_history_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES mcat2.feeds_tags(id),
+	CONSTRAINT feeds_tags_search_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id)
+);
+
+
+-- mcat2.notifications definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.notifications;
+
+CREATE TABLE mcat2.notifications (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	user_id uuid NOT NULL,
+	type_id uuid NOT NULL,
+	message text NOT NULL,
+	target_url text NULL,
+	is_read bool DEFAULT false NULL,
+	created_at timestamptz DEFAULT now() NULL,
+	solutionid varchar NULL,
+	CONSTRAINT notifications_pkey PRIMARY KEY (id),
+	CONSTRAINT notifications_type_id_fkey FOREIGN KEY (type_id) REFERENCES mcat2.notification_types(id),
+	CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.organizations definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.organizations;
+
+CREATE TABLE mcat2.organizations (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(255) NOT NULL,
+	legal_name varchar(255) NULL,
+	business_no varchar(50) NULL,
+	"domain" varchar(255) NULL,
+	industry varchar(100) NULL,
+	"size" varchar(50) NULL,
+	logo_url text NULL,
+	description text NULL,
+	contact_email varchar(255) NULL,
+	contact_phone varchar(50) NULL,
+	website_url text NULL,
+	address_line1 varchar(255) NULL,
+	address_line2 varchar(255) NULL,
+	city varchar(100) NULL,
+	state varchar(100) NULL,
+	postal_code varchar(30) NULL,
+	country_code bpchar(2) NULL,
+	status varchar(20) DEFAULT 'active'::character varying NOT NULL,
+	created_by uuid NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	updated_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT organizations_pkey PRIMARY KEY (id),
+	CONSTRAINT uq_org_business_no UNIQUE (business_no),
+	CONSTRAINT uq_org_domain UNIQUE (domain),
+	CONSTRAINT organizations_created_by_fkey FOREIGN KEY (created_by) REFERENCES mcat2.users(id) ON DELETE SET NULL
+);
+CREATE INDEX idx_org_name ON mcat2.organizations USING btree (name);
+
+
+-- mcat2.problem_inspection definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problem_inspection;
+
+CREATE TABLE mcat2.problem_inspection (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	inspection_summary text NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	user_id uuid NULL,
+	filename text NULL,
+	active bool DEFAULT true NOT NULL,
+	problem_count int4 DEFAULT 0 NULL,
+	CONSTRAINT problem_inspection_pkey PRIMARY KEY (id),
+	CONSTRAINT problem_inspection_problem_count_check CHECK ((problem_count >= 0)),
+	CONSTRAINT problem_inspection_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.problem_inspection_error definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problem_inspection_error;
+
+CREATE TABLE mcat2.problem_inspection_error (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	inspection_id uuid NOT NULL,
+	problem_number int4 NOT NULL,
+	"location" text NULL,
+	correction text NULL,
+	"content" text NULL,
+	severity varchar(20) NULL,
+	CONSTRAINT problem_inspection_error_pkey PRIMARY KEY (id),
+	CONSTRAINT problem_inspection_error_severity_check CHECK (((severity)::text = ANY (ARRAY[('minor'::character varying)::text, ('major'::character varying)::text, ('critical'::character varying)::text]))),
+	CONSTRAINT fk_inspection FOREIGN KEY (inspection_id) REFERENCES mcat2.problem_inspection(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.problem_inspection_thinking definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problem_inspection_thinking;
+
+CREATE TABLE mcat2.problem_inspection_thinking (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	inspection_id uuid NOT NULL,
+	problem_number int4 NOT NULL,
+	step int4 NOT NULL,
+	description text NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT problem_inspection_thinking_pkey PRIMARY KEY (id),
+	CONSTRAINT unique_problem_step UNIQUE (inspection_id, problem_number, step),
+	CONSTRAINT fk_thinking_inspection FOREIGN KEY (inspection_id) REFERENCES mcat2.problem_inspection(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.problems_depth0 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_depth0;
+
+CREATE TABLE mcat2.problems_depth0 (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title_for_product varchar(50) NOT NULL,
+	title_for_csm varchar(50) NOT NULL,
+	description varchar(255) NULL,
+	order0 int4 NOT NULL,
+	curriculum_id uuid NOT NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT problems_depth0_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT curriculum_id FOREIGN KEY (curriculum_id) REFERENCES mcat2.problems_curriculum(id)
+);
+
+
+-- mcat2.problems_depth1 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_depth1;
+
+CREATE TABLE mcat2.problems_depth1 (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title_for_product varchar(50) NOT NULL,
+	title_for_csm varchar(50) NOT NULL,
+	description varchar(255) NULL,
+	order1 int4 NOT NULL,
+	curriculum_id uuid NOT NULL,
+	depth0_id uuid NOT NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT problems_depth1_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT curriculum_id FOREIGN KEY (curriculum_id) REFERENCES mcat2.problems_curriculum(id),
+	CONSTRAINT depth0_id FOREIGN KEY (depth0_id) REFERENCES mcat2.problems_depth0(id)
+);
+
+
+-- mcat2.problems_depth2 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_depth2;
+
+CREATE TABLE mcat2.problems_depth2 (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title_for_product varchar(50) NOT NULL,
+	title_for_csm varchar(50) NOT NULL,
+	description varchar(255) NULL,
+	order2 int4 NOT NULL,
+	curriculum_id uuid NOT NULL,
+	depth0_id uuid NOT NULL,
+	depth1_id uuid NOT NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT problems_depth2_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT curriculum_id FOREIGN KEY (curriculum_id) REFERENCES mcat2.problems_curriculum(id),
+	CONSTRAINT depth0_id FOREIGN KEY (depth0_id) REFERENCES mcat2.problems_depth0(id),
+	CONSTRAINT depth1_id FOREIGN KEY (depth1_id) REFERENCES mcat2.problems_depth1(id)
+);
+
+
+-- mcat2.problems_depth3 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_depth3;
+
+CREATE TABLE mcat2.problems_depth3 (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title_for_product varchar(50) NOT NULL,
+	title_for_csm varchar(50) NOT NULL,
+	description varchar(255) NULL,
+	order3 int4 NOT NULL,
+	curriculum_id uuid NOT NULL,
+	depth0_id uuid NOT NULL,
+	depth1_id uuid NOT NULL,
+	depth2_id uuid NOT NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT problems_depth3_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT curriculum_id FOREIGN KEY (curriculum_id) REFERENCES mcat2.problems_curriculum(id),
+	CONSTRAINT depth0_id FOREIGN KEY (depth0_id) REFERENCES mcat2.problems_depth0(id),
+	CONSTRAINT depth1_id FOREIGN KEY (depth1_id) REFERENCES mcat2.problems_depth1(id),
+	CONSTRAINT depth2_id FOREIGN KEY (depth2_id) REFERENCES mcat2.problems_depth2(id)
+);
+
+
+-- mcat2.problems_depth4 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_depth4;
+
+CREATE TABLE mcat2.problems_depth4 (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	title_for_product varchar(100) NOT NULL,
+	title_for_csm varchar(100) NOT NULL,
+	description varchar(255) NULL,
+	order4 int4 NOT NULL,
+	curriculum_id uuid NOT NULL,
+	depth0_id uuid NOT NULL,
+	depth1_id uuid NOT NULL,
+	depth2_id uuid NOT NULL,
+	depth3_id uuid NOT NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT problems_depth4_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT curriculum_id FOREIGN KEY (curriculum_id) REFERENCES mcat2.problems_curriculum(id),
+	CONSTRAINT depth0_id FOREIGN KEY (depth0_id) REFERENCES mcat2.problems_depth0(id),
+	CONSTRAINT depth1_id FOREIGN KEY (depth1_id) REFERENCES mcat2.problems_depth1(id),
+	CONSTRAINT depth2_id FOREIGN KEY (depth2_id) REFERENCES mcat2.problems_depth2(id),
+	CONSTRAINT depth3_id FOREIGN KEY (depth3_id) REFERENCES mcat2.problems_depth3(id)
+);
+
+
+-- mcat2.problems_labeling definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_labeling;
+
+CREATE TABLE mcat2.problems_labeling (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp NOT NULL,
+	modified timestamp NOT NULL,
+	"type" varchar(50) NULL,
+	depth4_id uuid NOT NULL,
+	system_id varchar NULL,
+	curriculum_id uuid NULL,
+	CONSTRAINT id UNIQUE (id),
+	CONSTRAINT problems_labeling_id_unique UNIQUE (id),
+	CONSTRAINT fk_depth4_id FOREIGN KEY (depth4_id) REFERENCES mcat2.problems_depth4(id)
+);
+
+
+-- mcat2.problems_problem_2560 definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_problem_2560;
+
+CREATE TABLE mcat2.problems_problem_2560 (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	problem_id uuid NOT NULL,
+	system_id varchar NOT NULL,
+	problem_text_embedding _float4 NOT NULL,
+	solution_text_embedding _float4 NOT NULL,
+	CONSTRAINT problems_problem_2560_problem_system_unique UNIQUE (problem_id, system_id),
+	CONSTRAINT problems_problem_2560_problem_text_embedding_check CHECK ((array_length(problem_text_embedding, 1) = 2560)),
+	CONSTRAINT problems_problem_2560_solution_text_embedding_check CHECK ((array_length(solution_text_embedding, 1) = 2560)),
+	CONSTRAINT problems_problem_2560_problem_fk FOREIGN KEY (problem_id) REFERENCES mcat2.problems_problem(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.problems_problem_with_labeling definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_problem_with_labeling;
+
+CREATE TABLE mcat2.problems_problem_with_labeling (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp NOT NULL,
+	modified timestamp NOT NULL,
+	problem_id uuid NOT NULL,
+	labeling_id uuid NOT NULL,
+	CONSTRAINT id_unique UNIQUE (id),
+	CONSTRAINT problem_id_with_labeling_id_unique UNIQUE (problem_id, labeling_id),
+	CONSTRAINT problems_problem_with_labeling_id_unique UNIQUE (id),
+	CONSTRAINT fk_labeling_id FOREIGN KEY (labeling_id) REFERENCES mcat2.problems_labeling(id),
+	CONSTRAINT fk_problem_id FOREIGN KEY (problem_id) REFERENCES mcat2.problems_problem(id)
+);
+
+
+-- mcat2.problems_problem_with_source definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.problems_problem_with_source;
+
+CREATE TABLE mcat2.problems_problem_with_source (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp NOT NULL,
+	modified timestamp NOT NULL,
+	problem_id uuid NULL,
+	source_id uuid NULL,
+	system_id varchar NULL,
+	content_id varchar NULL,
+	problem_number varchar NULL,
+	CONSTRAINT ck_ppws_problem_number_not_empty CHECK (((problem_number IS NULL) OR (length((problem_number)::text) > 0))) NOT VALID,
+	CONSTRAINT problem_id_with_source_id_unique UNIQUE (problem_id, source_id),
+	CONSTRAINT problems_problem_with_source_pkey PRIMARY KEY (id),
+	CONSTRAINT system_id_with_source_id_unique UNIQUE (system_id, source_id),
+	CONSTRAINT fk_problem_id FOREIGN KEY (problem_id) REFERENCES mcat2.problems_problem(id),
+	CONSTRAINT fk_source_id FOREIGN KEY (source_id) REFERENCES mcat2.problems_source(id)
+);
+CREATE INDEX idx_ppws_content_problem ON mcat2.problems_problem_with_source USING btree (content_id, problem_number);
+
+
+-- mcat2.question_ai_classification_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_ai_classification_history;
+
+CREATE TABLE mcat2.question_ai_classification_history (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	"version" varchar(20) NULL,
+	system_id varchar NOT NULL,
+	"type" varchar(50) NOT NULL,
+	depth4_id uuid NOT NULL,
+	CONSTRAINT question_ai_classification_history_pkey PRIMARY KEY (id),
+	CONSTRAINT unique_labeling UNIQUE (system_id, type, depth4_id),
+	CONSTRAINT fk_depth4_id FOREIGN KEY (depth4_id) REFERENCES mcat2.problems_depth4(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.question_hwp definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_hwp;
+
+CREATE TABLE mcat2.question_hwp (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	question_id uuid NOT NULL,
+	problem text NOT NULL,
+	solution text NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	answer varchar NULL,
+	CONSTRAINT question_hwp_pkey PRIMARY KEY (id),
+	CONSTRAINT question_hwp_question_id_unique UNIQUE (question_id),
+	CONSTRAINT fk_question_hwp_question FOREIGN KEY (question_id) REFERENCES mcat2.questions(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.question_images definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_images;
+
+CREATE TABLE mcat2.question_images (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	question_id uuid NOT NULL,
+	image_data bytea NOT NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	image_number int4 DEFAULT 1 NOT NULL,
+	CONSTRAINT images_pkey PRIMARY KEY (id),
+	CONSTRAINT question_images_question_id_unique UNIQUE (question_id),
+	CONSTRAINT fk_images_question FOREIGN KEY (question_id) REFERENCES mcat2.questions(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.question_metadata definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_metadata;
+
+CREATE TABLE mcat2.question_metadata (
+	question_id uuid NOT NULL,
+	category _text NULL,
+	subject _text NULL,
+	type_codes _text NULL,
+	log_tbl _text NULL,
+	"range" _text NULL,
+	log jsonb NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	CONSTRAINT question_metadata_pkey PRIMARY KEY (question_id),
+	CONSTRAINT question_metadata_question_id_unique UNIQUE (question_id),
+	CONSTRAINT question_metadata_question_id_fkey FOREIGN KEY (question_id) REFERENCES mcat2.questions(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_qm_category ON mcat2.question_metadata USING gin (category);
+CREATE INDEX idx_qm_subject ON mcat2.question_metadata USING gin (subject);
+CREATE INDEX idx_qm_type_codes ON mcat2.question_metadata USING gin (type_codes);
+
+
+-- mcat2.question_render definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_render;
+
+CREATE TABLE mcat2.question_render (
+	question_id uuid NOT NULL,
+	preview_url text NULL,
+	question_html text NULL,
+	solution_html text NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	question_katex text NULL,
+	solution_katex text NULL,
+	answer varchar NULL,
+	question_xml xml NULL,
+	CONSTRAINT question_render_pkey PRIMARY KEY (question_id),
+	CONSTRAINT question_render_question_id_unique UNIQUE (question_id),
+	CONSTRAINT question_render_question_id_fkey FOREIGN KEY (question_id) REFERENCES mcat2.questions(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.question_search definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_search;
+
+CREATE TABLE mcat2.question_search (
+	question_id uuid NOT NULL,
+	"level" int4 NULL,
+	order_no int4 NULL,
+	qns text NULL,
+	question text NULL,
+	solution text NULL,
+	qns_equation text NULL,
+	question_equation text NULL,
+	solution_equation text NULL,
+	qns_latex text NULL,
+	question_latex text NULL,
+	solution_latex text NULL,
+	category_text text NULL,
+	subject_text text NULL,
+	log_tbl_text text NULL,
+	range_text text NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	CONSTRAINT question_search_pkey PRIMARY KEY (question_id),
+	CONSTRAINT question_search_question_id_unique UNIQUE (question_id),
+	CONSTRAINT question_search_question_id_fkey FOREIGN KEY (question_id) REFERENCES mcat2.questions(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_qs_category_text ON mcat2.question_search USING btree (category_text);
+CREATE INDEX idx_qs_question ON mcat2.question_search USING btree (question);
+CREATE INDEX idx_qs_range_text ON mcat2.question_search USING btree (range_text);
+CREATE INDEX idx_qs_solution ON mcat2.question_search USING btree (solution);
+CREATE INDEX idx_qs_subject_text ON mcat2.question_search USING btree (subject_text);
+
+
+-- mcat2.question_search_fts definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_search_fts;
+
+CREATE TABLE mcat2.question_search_fts (
+	question_id uuid NOT NULL,
+	"level" int4 NULL,
+	order_no int4 NULL,
+	qns text NULL,
+	question text NULL,
+	solution text NULL,
+	qns_equation text NULL,
+	question_equation text NULL,
+	solution_equation text NULL,
+	qns_latex text NULL,
+	question_latex text NULL,
+	solution_latex text NULL,
+	category_text text NULL,
+	subject_text text NULL,
+	log_tbl_text text NULL,
+	range_text text NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	CONSTRAINT question_search_fts_pkey PRIMARY KEY (question_id),
+	CONSTRAINT question_search_fts_question_id_unique UNIQUE (question_id),
+	CONSTRAINT question_search_fts_question_id_fkey FOREIGN KEY (question_id) REFERENCES mcat2.questions(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_fts_all_fields ON mcat2.question_search_fts USING gin (to_tsvector('simple'::regconfig, ((((COALESCE(qns, ''::text) || ' '::text) || COALESCE(question, ''::text)) || ' '::text) || COALESCE(solution, ''::text))));
+CREATE INDEX idx_fts_category_text ON mcat2.question_search_fts USING gin (to_tsvector('simple'::regconfig, category_text));
+CREATE INDEX idx_fts_question ON mcat2.question_search_fts USING gin (to_tsvector('simple'::regconfig, question));
+CREATE INDEX idx_fts_range_text ON mcat2.question_search_fts USING gin (to_tsvector('simple'::regconfig, range_text));
+CREATE INDEX idx_fts_solution ON mcat2.question_search_fts USING gin (to_tsvector('simple'::regconfig, solution));
+CREATE INDEX idx_fts_subject_text ON mcat2.question_search_fts USING gin (to_tsvector('simple'::regconfig, subject_text));
+
+
+-- mcat2.resources definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.resources;
+
+CREATE TABLE mcat2.resources (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	title varchar(255) NOT NULL,
+	author_id uuid NOT NULL,
+	"content" text NOT NULL,
+	status varchar(20) DEFAULT 'active'::character varying NULL,
+	created_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	updated_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	is_pinned bool DEFAULT false NULL,
+	requires_coupon bool DEFAULT false NULL,
+	CONSTRAINT resources_pkey PRIMARY KEY (id),
+	CONSTRAINT resources_author_id_fkey FOREIGN KEY (author_id) REFERENCES mcat2.users(id) ON DELETE SET NULL
+);
+
+
+-- mcat2.school_calendar definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_calendar;
+
+CREATE TABLE mcat2.school_calendar (
+	id int4 DEFAULT nextval('mcat2.academic_calendars_id_seq'::regclass) NOT NULL,
+	school_id int4 NULL,
+	"year" int4 NULL,
+	semester int4 NULL,
+	event_name varchar NULL,
+	event_description text NULL,
+	grade1_attendance bool NULL,
+	grade2_attendance bool NULL,
+	grade3_attendance bool NULL,
+	start_date date NULL,
+	end_date date NULL,
+	CONSTRAINT academic_calendars_pkey PRIMARY KEY (id),
+	CONSTRAINT academic_calendars_school_id_fkey FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.school_grade_cut definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_grade_cut;
+
+CREATE TABLE mcat2.school_grade_cut (
+	id serial4 NOT NULL,
+	school_id int4 NOT NULL,
+	"year" int4 NOT NULL,
+	grade int4 NOT NULL,
+	semester int2 NOT NULL,
+	exam_type mcat2."exam_type_enum" NOT NULL,
+	subject varchar NOT NULL,
+	cut jsonb NOT NULL,
+	created timestamp DEFAULT now() NULL,
+	CONSTRAINT school_grade_cut_pkey PRIMARY KEY (id),
+	CONSTRAINT school_grade_cut_school_id_fkey FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.school_grade_meta definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_grade_meta;
+
+CREATE TABLE mcat2.school_grade_meta (
+	id int4 DEFAULT nextval('mcat2.school_grading_id_seq'::regclass) NOT NULL,
+	school_id int4 NOT NULL,
+	"year" int4 NOT NULL,
+	grade int4 NOT NULL,
+	semester int2 NOT NULL,
+	subject varchar NOT NULL,
+	exam_type mcat2."exam_type_enum" NOT NULL,
+	weight numeric(5, 2) NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	CONSTRAINT school_grading_pkey PRIMARY KEY (id),
+	CONSTRAINT school_grading_school_id_grade_year_semester_subject_exam_t_key UNIQUE (school_id, grade, year, semester, subject, exam_type),
+	CONSTRAINT school_grading_semester_check CHECK ((semester = ANY (ARRAY[1, 2]))),
+	CONSTRAINT school_grading_weight_check CHECK (((weight >= (0)::numeric) AND (weight <= (100)::numeric))),
+	CONSTRAINT school_grading_school_id_fkey FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.school_likes definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_likes;
+
+CREATE TABLE mcat2.school_likes (
+	id serial4 NOT NULL,
+	school_id int4 NULL,
+	user_id uuid NULL,
+	created timestamp DEFAULT now() NULL,
+	CONSTRAINT school_likes_pkey PRIMARY KEY (id),
+	CONSTRAINT school_likes_school_id_fkey FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id) ON DELETE CASCADE,
+	CONSTRAINT school_likes_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.school_scope_like definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_scope_like;
+
+CREATE TABLE mcat2.school_scope_like (
+	id serial4 NOT NULL,
+	user_id uuid NOT NULL,
+	scope_enum mcat2."menu_type_enum" NOT NULL,
+	is_liked bool NOT NULL,
+	created_at timestamp DEFAULT now() NULL,
+	CONSTRAINT school_scope_like_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_scope_like_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.school_students definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_students;
+
+CREATE TABLE mcat2.school_students (
+	id serial4 NOT NULL,
+	school_id int4 NULL,
+	"year" int4 NOT NULL,
+	grade int4 NOT NULL,
+	total_classes int4 NOT NULL,
+	total_students int4 NOT NULL,
+	created timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NULL,
+	CONSTRAINT school_students_pkey PRIMARY KEY (id),
+	CONSTRAINT school_students_school_id_fkey FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.school_tag_map definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.school_tag_map;
+
+CREATE TABLE mcat2.school_tag_map (
+	id serial4 NOT NULL,
+	school_id int4 NOT NULL,
+	tag_id int4 NOT NULL,
+	user_id uuid NOT NULL,
+	created timestamptz DEFAULT now() NULL,
+	CONSTRAINT school_tag_map_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_school FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id) ON DELETE CASCADE,
+	CONSTRAINT fk_tag FOREIGN KEY (tag_id) REFERENCES mcat2.school_tags(id) ON DELETE CASCADE,
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.temp_schools_assessment_proportion definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_schools_assessment_proportion;
+
+CREATE TABLE mcat2.temp_schools_assessment_proportion (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	exam_year int4 NULL,
+	exam_grade varchar(10) NULL,
+	exam_semester varchar(10) NULL,
+	exam_subject varchar(100) NULL,
+	proportion_performance float4 NULL,
+	proportion_midterm float4 NULL,
+	proportion_final float4 NULL,
+	school_id uuid NOT NULL,
+	worker varchar(10) NULL,
+	worker_id int4 NULL,
+	CONSTRAINT exam_unique UNIQUE (exam_year, exam_grade, exam_semester, exam_subject, school_id),
+	CONSTRAINT temp_schools_assessment_proportion_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT fk_school_id FOREIGN KEY (school_id) REFERENCES mcat2.temp_schools_school(id)
+);
+
+
+-- mcat2.temp_schools_grade_distribution definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_schools_grade_distribution;
+
+CREATE TABLE mcat2.temp_schools_grade_distribution (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	exam_year int4 NULL,
+	exam_grade varchar(10) NULL,
+	exam_semester varchar(10) NULL,
+	exam_subject varchar(100) NULL,
+	exam_subject_class_time int4 NULL,
+	exam_mean float4 NULL,
+	exam_standard_deviation float4 NULL,
+	group_a_ratio float4 NULL,
+	group_b_ratio float4 NULL,
+	group_c_ratio float4 NULL,
+	group_d_ratio float4 NULL,
+	group_e_ratio float4 NULL,
+	school_id uuid NOT NULL,
+	worker varchar(10) NULL,
+	worker_id varchar NULL,
+	CONSTRAINT exam_infl_unique UNIQUE (exam_year, exam_grade, exam_semester, exam_subject, school_id),
+	CONSTRAINT temp_schools_grade_distribution_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT fk_school_id FOREIGN KEY (school_id) REFERENCES mcat2.temp_schools_school(id)
+);
+
+
+-- mcat2.temp_schools_graduate_career definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_schools_graduate_career;
+
+CREATE TABLE mcat2.temp_schools_graduate_career (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	target_year int4 NULL,
+	school_id uuid NOT NULL,
+	cnt_male int4 NOT NULL,
+	cnt_female int4 NOT NULL,
+	cnt_korean_junior_college_male int4 NOT NULL,
+	cnt_korean_junior_college_female int4 NOT NULL,
+	cnt_korean_university_male int4 NOT NULL,
+	cnt_korean_university_female int4 NOT NULL,
+	cnt_foreign_junior_college_male int4 NOT NULL,
+	cnt_foreign_junior_college_female int4 NOT NULL,
+	cnt_foreign_university_male int4 NOT NULL,
+	cnt_foreign_university_female int4 NOT NULL,
+	cnt_employment_male int4 NOT NULL,
+	cnt_employment_female int4 NOT NULL,
+	worker varchar(10) NULL,
+	CONSTRAINT career_unique UNIQUE (school_id),
+	CONSTRAINT temp_schools_graduate_career_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT fk_school_id FOREIGN KEY (school_id) REFERENCES mcat2.temp_schools_school(id)
+);
+
+
+-- mcat2.test_similar_problem_details definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.test_similar_problem_details;
+
+CREATE TABLE mcat2.test_similar_problem_details (
+	test_id varchar(50) NOT NULL,
+	problem_index int4 NOT NULL,
+	problem_id varchar(50) NOT NULL,
+	total_score numeric(5, 2) NOT NULL,
+	category_score numeric(5, 2) NOT NULL,
+	text_similarity_score numeric(5, 2) NOT NULL,
+	source_problem_index int4 NULL,
+	CONSTRAINT test_problem_details_pkey PRIMARY KEY (test_id, problem_index),
+	CONSTRAINT fk_test_id FOREIGN KEY (test_id) REFERENCES mcat2.test_similar_problems(test_id)
+);
+
+
+-- mcat2.test_similar_user_inputs definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.test_similar_user_inputs;
+
+CREATE TABLE mcat2.test_similar_user_inputs (
+	test_id varchar(50) NOT NULL,
+	problem_index int4 NOT NULL,
+	"content" text NOT NULL,
+	"type" varchar(50) NOT NULL,
+	created_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NULL,
+	CONSTRAINT test_similar_user_inputs_pkey PRIMARY KEY (test_id, problem_index, type),
+	CONSTRAINT fk_test_input_id FOREIGN KEY (test_id) REFERENCES mcat2.test_similar_problems(test_id)
+);
+
+
+-- mcat2.tests_original definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.tests_original;
+
+CREATE TABLE mcat2.tests_original (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	created timestamp DEFAULT now() NOT NULL,
+	modified timestamp DEFAULT now() NOT NULL,
+	content_id varchar NOT NULL,
+	source_id uuid NOT NULL,
+	title varchar(255) NULL,
+	problem_count int4 NOT NULL,
+	source_modified timestamp NULL,
+	"version" int4 DEFAULT 1 NOT NULL,
+	CONSTRAINT tests_original_content_id_key UNIQUE (content_id),
+	CONSTRAINT tests_original_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_source FOREIGN KEY (source_id) REFERENCES mcat2.problems_source(id)
+);
+CREATE INDEX idx_tests_original_content_id ON mcat2.tests_original USING btree (content_id);
+
+
+-- mcat2.tests_original_with_problem definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.tests_original_with_problem;
+
+CREATE TABLE mcat2.tests_original_with_problem (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	created timestamp DEFAULT now() NOT NULL,
+	original_id uuid NOT NULL,
+	problem_id uuid NOT NULL,
+	problem_order int4 NOT NULL,
+	CONSTRAINT tests_original_with_problem_pkey PRIMARY KEY (id),
+	CONSTRAINT uq_original_order UNIQUE (original_id, problem_order),
+	CONSTRAINT uq_original_problem UNIQUE (original_id, problem_id),
+	CONSTRAINT fk_original FOREIGN KEY (original_id) REFERENCES mcat2.tests_original(id) ON DELETE CASCADE,
+	CONSTRAINT fk_problem FOREIGN KEY (problem_id) REFERENCES mcat2.problems_problem(id)
+);
+CREATE INDEX idx_tests_original_wp_original_id ON mcat2.tests_original_with_problem USING btree (original_id);
+
+
+-- mcat2.textbooks_textbook definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.textbooks_textbook;
+
+CREATE TABLE mcat2.textbooks_textbook (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	curriculum_id uuid NOT NULL,
+	depth0_id uuid NULL,
+	title varchar(100) NOT NULL,
+	description text NULL,
+	publisher varchar(100) NOT NULL,
+	thumbnail_url text NULL,
+	textbook_type varchar NULL,
+	CONSTRAINT textbook_id_pkey PRIMARY KEY (id),
+	CONSTRAINT textbooks_textbook_id_pkey UNIQUE (id),
+	CONSTRAINT fk_curriculum_id FOREIGN KEY (curriculum_id) REFERENCES mcat2.problems_curriculum(id),
+	CONSTRAINT fk_depth0_id FOREIGN KEY (depth0_id) REFERENCES mcat2.problems_depth0(id)
+);
+
+
+-- mcat2.upload_user_exam definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.upload_user_exam;
+
+CREATE TABLE mcat2.upload_user_exam (
+	id varchar NOT NULL,
+	user_id uuid NOT NULL,
+	school_id int4 NOT NULL,
+	"year" int4 NULL,
+	grade int2 NULL,
+	semester int2 NULL,
+	exam_type mcat2."exam_type_enum" NULL,
+	subject varchar NULL,
+	file_url text NULL,
+	request_type mcat2."exam_request_type_enum" NOT NULL,
+	status mcat2."exam_range_status_enum" DEFAULT 'request'::mcat2.exam_range_status_enum NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	user_filename varchar NULL,
+	user_filesize int4 NULL,
+	reviewed_by uuid NULL,
+	reviewed_at timestamp NULL,
+	description varchar NULL,
+	"type" mcat2."exam_file_type_enum" DEFAULT 'original_pdf'::mcat2.exam_file_type_enum NOT NULL,
+	file_type varchar NULL,
+	CONSTRAINT upload_user_exam_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_school FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id),
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id)
+);
+
+
+-- mcat2.upload_user_exam_semester definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.upload_user_exam_semester;
+
+CREATE TABLE mcat2.upload_user_exam_semester (
+	id varchar NOT NULL,
+	user_id uuid NOT NULL,
+	school_id int4 NOT NULL,
+	"year" int4 NULL,
+	grade int2 NULL,
+	semester int2 NULL,
+	exam_type mcat2."exam_type_enum" NULL,
+	exam_id_semester varchar NULL,
+	user_select_subject jsonb NULL,
+	file_url text NULL,
+	request_type mcat2."exam_request_type_enum" NOT NULL,
+	status mcat2."exam_range_status_enum" DEFAULT 'request'::mcat2.exam_range_status_enum NOT NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	user_filename varchar NULL,
+	user_filesize int4 NULL,
+	reviewed_by uuid NULL,
+	reviewed_at timestamptz NULL,
+	"type" mcat2."exam_file_type_enum" DEFAULT 'original_pdf'::mcat2.exam_file_type_enum NOT NULL,
+	description varchar NULL,
+	CONSTRAINT upload_user_exam_semester_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_school FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id),
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id)
+);
+
+
+-- mcat2.user_ai_usage_logs definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_ai_usage_logs;
+
+CREATE TABLE mcat2.user_ai_usage_logs (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	user_id uuid NOT NULL,
+	usage_type varchar(20) NOT NULL,
+	usage_count int4 DEFAULT 1 NOT NULL,
+	used_at timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NULL,
+	CONSTRAINT user_ai_usage_logs_pkey PRIMARY KEY (id),
+	CONSTRAINT user_ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_badge definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_badge;
+
+CREATE TABLE mcat2.user_badge (
+	user_badge_id uuid DEFAULT gen_random_uuid() NOT NULL,
+	user_id uuid NOT NULL,
+	badge_id uuid NOT NULL,
+	status mcat2."badge_status_type" DEFAULT 'pending'::mcat2.badge_status_type NOT NULL,
+	granted_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	is_visible bool DEFAULT true NOT NULL,
+	CONSTRAINT user_badge_pkey PRIMARY KEY (user_badge_id),
+	CONSTRAINT fk_user_badge_badge FOREIGN KEY (badge_id) REFERENCES mcat2.badge(badge_id),
+	CONSTRAINT fk_user_badge_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id)
+);
+
+
+-- mcat2.user_extractions definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_extractions;
+
+CREATE TABLE mcat2.user_extractions (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	user_id uuid NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	file_name text NULL,
+	CONSTRAINT user_extractions_pkey PRIMARY KEY (id),
+	CONSTRAINT user_extractions_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_plan_subscriptions definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_plan_subscriptions;
+
+CREATE TABLE mcat2.user_plan_subscriptions (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	user_id uuid NOT NULL,
+	plan_id uuid NOT NULL,
+	subscribed_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	expired_at timestamptz NULL,
+	CONSTRAINT user_plan_subscriptions_pkey PRIMARY KEY (id),
+	CONSTRAINT user_plan_subscriptions_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES mcat2."plans"(id) ON DELETE RESTRICT,
+	CONSTRAINT user_plan_subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_point definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_point;
+
+CREATE TABLE mcat2.user_point (
+	user_id uuid NOT NULL,
+	point int8 DEFAULT 0 NOT NULL,
+	updated_at timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	CONSTRAINT user_point_pkey PRIMARY KEY (user_id),
+	CONSTRAINT user_point_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_point_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_point_history;
+
+CREATE TABLE mcat2.user_point_history (
+	id bigserial NOT NULL,
+	user_id uuid NOT NULL,
+	point int8 NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	description text DEFAULT ''::text NULL,
+	"type" varchar(10) DEFAULT 'deposit'::character varying NOT NULL,
+	title text DEFAULT ''::text NOT NULL,
+	icon_type varchar(50) NULL,
+	solutionid varchar NULL,
+	CONSTRAINT user_point_history_pkey PRIMARY KEY (id),
+	CONSTRAINT user_point_history_type_check CHECK (((type)::text = ANY ((ARRAY['deposit'::character varying, 'withdraw'::character varying])::text[]))),
+	CONSTRAINT user_point_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_search_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_search_history;
+
+CREATE TABLE mcat2.user_search_history (
+	id serial4 NOT NULL,
+	user_id uuid NOT NULL,
+	school_id int4 NULL,
+	searched_at timestamp DEFAULT now() NULL,
+	CONSTRAINT user_search_history_pkey PRIMARY KEY (id),
+	CONSTRAINT user_search_history_school_id_fkey FOREIGN KEY (school_id) REFERENCES mcat2.school_info(id),
+	CONSTRAINT user_search_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id)
+);
+
+
+-- mcat2.user_teaching_grades definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_teaching_grades;
+
+CREATE TABLE mcat2.user_teaching_grades (
+	user_id uuid NOT NULL,
+	grade varchar(50) NOT NULL,
+	assigned_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT user_teaching_grades_pkey PRIMARY KEY (user_id, grade),
+	CONSTRAINT fk_user_teaching FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_teaching_subjects definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_teaching_subjects;
+
+CREATE TABLE mcat2.user_teaching_subjects (
+	user_id uuid NOT NULL,
+	subject varchar(50) NOT NULL,
+	assigned_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT user_teaching_subjects_pkey PRIMARY KEY (user_id, subject),
+	CONSTRAINT fk_user_teaching_subject FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_test_similar_problems definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_test_similar_problems;
+
+CREATE TABLE mcat2.user_test_similar_problems (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	user_id uuid NOT NULL,
+	test_id varchar(50) NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT user_test_similar_problems_pkey PRIMARY KEY (id),
+	CONSTRAINT user_test_unique UNIQUE (user_id, test_id),
+	CONSTRAINT fk_test FOREIGN KEY (test_id) REFERENCES mcat2.test_similar_problems(test_id) ON DELETE CASCADE,
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.user_tokens definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_tokens;
+
+CREATE TABLE mcat2.user_tokens (
+	user_id uuid NOT NULL,
+	token_balance int4 DEFAULT 0 NOT NULL,
+	updated_at timestamptz DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	CONSTRAINT user_tokens_pkey PRIMARY KEY (user_id),
+	CONSTRAINT user_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.workspaces definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.workspaces;
+
+CREATE TABLE mcat2.workspaces (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	owner_user_id uuid NOT NULL,
+	"name" varchar(255) NOT NULL,
+	status varchar(20) DEFAULT 'active'::character varying NOT NULL,
+	"plan" varchar(30) DEFAULT 'free'::character varying NOT NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	updated_at timestamptz DEFAULT now() NOT NULL,
+	organization_id uuid NULL,
+	CONSTRAINT workspaces_pkey PRIMARY KEY (id),
+	CONSTRAINT workspaces_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES mcat2.organizations(id) ON DELETE SET NULL,
+	CONSTRAINT workspaces_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+CREATE INDEX idx_workspaces_org ON mcat2.workspaces USING btree (organization_id);
+CREATE INDEX idx_workspaces_owner ON mcat2.workspaces USING btree (owner_user_id);
+
+
+-- mcat2.exam_file_download_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.exam_file_download_history;
+
+CREATE TABLE mcat2.exam_file_download_history (
+	id bigserial NOT NULL,
+	exam_id varchar NOT NULL,
+	user_id uuid NOT NULL,
+	downloaded_at timestamptz DEFAULT now() NOT NULL,
+	filename varchar NULL,
+	CONSTRAINT exam_file_download_history_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_download_exam FOREIGN KEY (exam_id) REFERENCES mcat2.exam_meta(id) ON DELETE CASCADE,
+	CONSTRAINT fk_download_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.exam_files definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.exam_files;
+
+CREATE TABLE mcat2.exam_files (
+	exam_id varchar NOT NULL,
+	file_urls _text NULL,
+	preview_url text NULL,
+	file_types _varchar NULL,
+	uploaded_by uuid NULL,
+	created timestamp NULL,
+	modified timestamp NULL,
+	CONSTRAINT exam_files_pkey PRIMARY KEY (exam_id),
+	CONSTRAINT exam_files_users_fk FOREIGN KEY (uploaded_by) REFERENCES mcat2.users(id),
+	CONSTRAINT fk_exam FOREIGN KEY (exam_id) REFERENCES mcat2.exam_meta(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.exam_range definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.exam_range;
+
+CREATE TABLE mcat2.exam_range (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	user_id uuid NULL,
+	exam_id varchar NOT NULL,
+	textbook_id uuid NULL,
+	start_page int4 NULL,
+	end_page int4 NULL,
+	start_depth3_id uuid NULL,
+	end_depth3_id uuid NULL,
+	start_category0 varchar(100) NULL,
+	end_category0 varchar(100) NULL,
+	start_category1 varchar(100) NULL,
+	end_category1 varchar(100) NULL,
+	start_category2 varchar(100) NULL,
+	end_category2 varchar(100) NULL,
+	start_category3 varchar(100) NULL,
+	end_category3 varchar(100) NULL,
+	CONSTRAINT exam_range_pkey PRIMARY KEY (id),
+	CONSTRAINT exam_range_end_depth3_id_fkey FOREIGN KEY (end_depth3_id) REFERENCES mcat2.problems_depth3(id),
+	CONSTRAINT exam_range_exam_id_fkey FOREIGN KEY (exam_id) REFERENCES mcat2.exam_meta(id),
+	CONSTRAINT exam_range_start_depth3_id_fkey FOREIGN KEY (start_depth3_id) REFERENCES mcat2.problems_depth3(id),
+	CONSTRAINT exam_range_textbook_id_fkey FOREIGN KEY (textbook_id) REFERENCES mcat2.textbooks_textbook(id)
+);
+
+
+-- mcat2.exam_range_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.exam_range_history;
+
+CREATE TABLE mcat2.exam_range_history (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	user_id uuid NOT NULL,
+	status mcat2."exam_range_status_enum" DEFAULT 'request'::mcat2.exam_range_status_enum NOT NULL,
+	request_type mcat2."exam_request_type_enum" NOT NULL,
+	range_type mcat2."exam_range_type_enum" NOT NULL,
+	exam_id varchar NOT NULL,
+	textbook_id uuid NULL,
+	start_page int4 NULL,
+	end_page int4 NULL,
+	start_depth3_id uuid NULL,
+	end_depth3_id uuid NULL,
+	start_category0 varchar(100) NULL,
+	end_category0 varchar(100) NULL,
+	start_category1 varchar(100) NULL,
+	end_category1 varchar(100) NULL,
+	start_category2 varchar(100) NULL,
+	end_category2 varchar(100) NULL,
+	start_category3 varchar(100) NULL,
+	end_category3 varchar(100) NULL,
+	reviewed_by uuid NULL,
+	reviewed_at timestamp NULL,
+	description varchar NULL,
+	CONSTRAINT exam_range_history_pkey PRIMARY KEY (id),
+	CONSTRAINT exam_range_history_end_depth3_id_fkey FOREIGN KEY (end_depth3_id) REFERENCES mcat2.problems_depth3(id),
+	CONSTRAINT exam_range_history_exam_id_fkey FOREIGN KEY (exam_id) REFERENCES mcat2.exam_meta(id),
+	CONSTRAINT exam_range_history_start_depth3_id_fkey FOREIGN KEY (start_depth3_id) REFERENCES mcat2.problems_depth3(id),
+	CONSTRAINT exam_range_history_textbook_id_fkey FOREIGN KEY (textbook_id) REFERENCES mcat2.textbooks_textbook(id)
+);
+
+
+-- mcat2.feeds_comment definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_comment;
+
+CREATE TABLE mcat2.feeds_comment (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	modified timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	status mcat2."feed_post_status" DEFAULT 'active'::mcat2.feed_post_status NOT NULL,
+	user_id uuid NOT NULL,
+	post_id uuid NOT NULL,
+	"content" text NOT NULL,
+	parent_id uuid NULL,
+	CONSTRAINT feeds_comment_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_post_id FOREIGN KEY (post_id) REFERENCES mcat2.feeds_post(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_comment_history definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_comment_history;
+
+CREATE TABLE mcat2.feeds_comment_history (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	comment_id uuid NOT NULL,
+	created timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	user_id uuid NULL,
+	old_content text NOT NULL,
+	CONSTRAINT feeds_comment_history_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_comment FOREIGN KEY (comment_id) REFERENCES mcat2.feeds_comment(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_user_modified FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE SET NULL
+);
+
+
+-- mcat2.feeds_comment_report definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_comment_report;
+
+CREATE TABLE mcat2.feeds_comment_report (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	reported_by uuid NOT NULL,
+	comment_id uuid NOT NULL,
+	report_tags_id uuid NOT NULL,
+	description text NULL,
+	status mcat2."feed_post_status" DEFAULT 'reported'::mcat2.feed_post_status NULL,
+	reviewed_by uuid NULL,
+	reviewed_at timestamptz NULL,
+	CONSTRAINT feeds_comment_report_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_comment FOREIGN KEY (comment_id) REFERENCES mcat2.feeds_comment(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_report_tags_id FOREIGN KEY (report_tags_id) REFERENCES mcat2.feeds_report_tags(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_reported_by FOREIGN KEY (reported_by) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_upload_user_file definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_upload_user_file;
+
+CREATE TABLE mcat2.feeds_upload_user_file (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	user_id uuid NOT NULL,
+	post_id uuid NULL,
+	file_url text NULL,
+	file_type varchar NULL,
+	user_filename varchar NULL,
+	user_filesize int4 NULL,
+	comment_id uuid NULL,
+	CONSTRAINT feeds_upload_user_file_pkey PRIMARY KEY (id),
+	CONSTRAINT only_one_parent CHECK ((((post_id IS NOT NULL) AND (comment_id IS NULL)) OR ((post_id IS NULL) AND (comment_id IS NOT NULL)))),
+	CONSTRAINT fk_comment_id FOREIGN KEY (comment_id) REFERENCES mcat2.feeds_comment(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_post_id FOREIGN KEY (post_id) REFERENCES mcat2.feeds_post(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.feeds_video_thumbnail definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_video_thumbnail;
+
+CREATE TABLE mcat2.feeds_video_thumbnail (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	upload_file_id uuid NOT NULL,
+	thumbnail_url text NOT NULL,
+	CONSTRAINT feeds_video_thumbnail_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_upload_file_id FOREIGN KEY (upload_file_id) REFERENCES mcat2.feeds_upload_user_file(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.resource_attachments definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.resource_attachments;
+
+CREATE TABLE mcat2.resource_attachments (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	resource_id uuid NOT NULL,
+	file_name varchar(255) NOT NULL,
+	file_url text NOT NULL,
+	file_size int8 NULL,
+	created_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	CONSTRAINT resource_attachments_pkey PRIMARY KEY (id),
+	CONSTRAINT resource_attachments_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES mcat2.resources(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.resource_comments definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.resource_comments;
+
+CREATE TABLE mcat2.resource_comments (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	resource_id uuid NOT NULL,
+	user_id uuid NOT NULL,
+	parent_id uuid NULL,
+	"content" text NOT NULL,
+	status varchar(20) DEFAULT 'active'::character varying NULL,
+	created_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	updated_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	CONSTRAINT resource_comments_pkey PRIMARY KEY (id),
+	CONSTRAINT resource_comments_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES mcat2.resource_comments(id) ON DELETE CASCADE,
+	CONSTRAINT resource_comments_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES mcat2.resources(id) ON DELETE CASCADE,
+	CONSTRAINT resource_comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE SET NULL
+);
+
+
+-- mcat2.resource_media definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.resource_media;
+
+CREATE TABLE mcat2.resource_media (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	resource_id uuid NOT NULL,
+	media_type varchar(20) NOT NULL,
+	url text NOT NULL,
+	created_at timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul'::text) NULL,
+	CONSTRAINT resource_media_pkey PRIMARY KEY (id),
+	CONSTRAINT resource_media_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES mcat2.resources(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.storage_objects definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.storage_objects;
+
+CREATE TABLE mcat2.storage_objects (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	workspace_id uuid NOT NULL,
+	"type" mcat2."storage_object_type" NOT NULL,
+	parent_id uuid NULL,
+	"name" text NOT NULL,
+	path_cache text NULL,
+	mime_type varchar(255) NULL,
+	file_ext varchar(20) NULL,
+	latest_version_id uuid NULL,
+	size_bytes int8 NULL,
+	is_deleted bool DEFAULT false NOT NULL,
+	deleted_at timestamptz NULL,
+	created_by uuid NULL,
+	updated_by uuid NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	updated_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT storage_objects_pkey PRIMARY KEY (id),
+	CONSTRAINT storage_objects_created_by_fkey FOREIGN KEY (created_by) REFERENCES mcat2.users(id) ON DELETE SET NULL,
+	CONSTRAINT storage_objects_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES mcat2.storage_objects(id) ON DELETE CASCADE,
+	CONSTRAINT storage_objects_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES mcat2.users(id) ON DELETE SET NULL,
+	CONSTRAINT storage_objects_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES mcat2.workspaces(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_storage_objects_workspace_parent ON mcat2.storage_objects USING btree (workspace_id, parent_id);
+CREATE INDEX idx_storage_objects_workspace_path ON mcat2.storage_objects USING btree (workspace_id, path_cache);
+CREATE UNIQUE INDEX uq_storage_objects_sibling_name ON mcat2.storage_objects USING btree (workspace_id, parent_id, name) WHERE (is_deleted = false);
+
+
+-- mcat2.temp_schools_school_with_textbook definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.temp_schools_school_with_textbook;
+
+CREATE TABLE mcat2.temp_schools_school_with_textbook (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	school_id uuid NOT NULL,
+	textbook_id uuid NOT NULL,
+	CONSTRAINT temp_schools_school_with_textbook_pkey_2 PRIMARY KEY (id),
+	CONSTRAINT fk_school_id FOREIGN KEY (school_id) REFERENCES mcat2.temp_schools_school(id),
+	CONSTRAINT fk_textbook_id FOREIGN KEY (textbook_id) REFERENCES mcat2.textbooks_textbook(id)
+);
+
+
+-- mcat2.textbooks_index definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.textbooks_index;
+
+CREATE TABLE mcat2.textbooks_index (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	textbook_id uuid NULL,
+	start_page int4 NULL,
+	end_page int4 NULL,
+	category0 varchar NULL,
+	category1 varchar(100) NULL,
+	category2 varchar(100) NULL,
+	category3 varchar(100) NULL,
+	CONSTRAINT textbooks_index_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_textbook_id FOREIGN KEY (textbook_id) REFERENCES mcat2.textbooks_textbook(id)
+);
+
+
+-- mcat2.upload_exam_range definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.upload_exam_range;
+
+CREATE TABLE mcat2.upload_exam_range (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	start_depth0_id uuid NULL,
+	end_depth0_id uuid NULL,
+	start_depth1_id uuid NULL,
+	end_depth1_id uuid NULL,
+	start_depth2_id uuid NULL,
+	end_depth2_id uuid NULL,
+	upload_exam_id varchar NOT NULL,
+	CONSTRAINT upload_exam_range_pkey PRIMARY KEY (id),
+	CONSTRAINT upload_exam_range_end_depth0_id_fkey FOREIGN KEY (end_depth0_id) REFERENCES mcat2.problems_depth0(id),
+	CONSTRAINT upload_exam_range_end_depth1_id_fkey FOREIGN KEY (end_depth1_id) REFERENCES mcat2.problems_depth1(id),
+	CONSTRAINT upload_exam_range_end_depth2_id_fkey FOREIGN KEY (end_depth2_id) REFERENCES mcat2.problems_depth2(id),
+	CONSTRAINT upload_exam_range_exam_id_fkey FOREIGN KEY (upload_exam_id) REFERENCES mcat2.upload_user_exam(id),
+	CONSTRAINT upload_exam_range_start_depth0_id_fkey FOREIGN KEY (start_depth0_id) REFERENCES mcat2.problems_depth0(id),
+	CONSTRAINT upload_exam_range_start_depth1_id_fkey FOREIGN KEY (start_depth1_id) REFERENCES mcat2.problems_depth1(id),
+	CONSTRAINT upload_exam_range_start_depth2_id_fkey FOREIGN KEY (start_depth2_id) REFERENCES mcat2.problems_depth2(id)
+);
+
+
+-- mcat2.upload_sessions definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.upload_sessions;
+
+CREATE TABLE mcat2.upload_sessions (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	workspace_id uuid NOT NULL,
+	target_parent_id uuid NULL,
+	filename text NOT NULL,
+	mime_type varchar(255) NULL,
+	total_size int8 NOT NULL,
+	chunk_size int4 DEFAULT 5242880 NOT NULL,
+	status varchar(20) DEFAULT 'initiated'::character varying NOT NULL,
+	created_by uuid NULL,
+	idempotency_key varchar(255) NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	updated_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT upload_sessions_pkey PRIMARY KEY (id),
+	CONSTRAINT upload_sessions_created_by_fkey FOREIGN KEY (created_by) REFERENCES mcat2.users(id) ON DELETE SET NULL,
+	CONSTRAINT upload_sessions_target_parent_id_fkey FOREIGN KEY (target_parent_id) REFERENCES mcat2.storage_objects(id) ON DELETE SET NULL,
+	CONSTRAINT upload_sessions_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES mcat2.workspaces(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_upload_sessions_workspace_status ON mcat2.upload_sessions USING btree (workspace_id, status, created_at DESC);
+
+
+-- mcat2.user_extracted_questions definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.user_extracted_questions;
+
+CREATE TABLE mcat2.user_extracted_questions (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	extraction_id uuid NOT NULL,
+	question_id varchar(50) NOT NULL,
+	"type" varchar(20) NOT NULL,
+	"content" text NOT NULL,
+	"source" varchar(50) NOT NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT user_extracted_questions_pkey PRIMARY KEY (id),
+	CONSTRAINT user_extracted_items_extraction_id_fkey FOREIGN KEY (extraction_id) REFERENCES mcat2.user_extractions(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.workspace_members definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.workspace_members;
+
+CREATE TABLE mcat2.workspace_members (
+	workspace_id uuid NOT NULL,
+	user_id uuid NOT NULL,
+	"role" varchar(20) DEFAULT 'member'::character varying NOT NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT workspace_members_pkey PRIMARY KEY (workspace_id, user_id),
+	CONSTRAINT workspace_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE CASCADE,
+	CONSTRAINT workspace_members_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES mcat2.workspaces(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_workspace_members_user ON mcat2.workspace_members USING btree (user_id);
+
+
+-- mcat2.feeds_download_user_file definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.feeds_download_user_file;
+
+CREATE TABLE mcat2.feeds_download_user_file (
+	id uuid DEFAULT mcat2.uuid_generate_v4() NOT NULL,
+	created timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	modified timestamp DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'asia/seoul'::text) NOT NULL,
+	user_id uuid NOT NULL,
+	upload_user_file_id uuid NOT NULL,
+	CONSTRAINT feeds_download_user_file_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_upload_user_file_id FOREIGN KEY (upload_user_file_id) REFERENCES mcat2.feeds_upload_user_file(id) ON DELETE RESTRICT,
+	CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES mcat2.users(id) ON DELETE RESTRICT
+);
+
+
+-- mcat2.storage_object_versions definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.storage_object_versions;
+
+CREATE TABLE mcat2.storage_object_versions (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	object_id uuid NOT NULL,
+	version_no int4 NOT NULL,
+	blob_id uuid NOT NULL,
+	size_bytes int8 NOT NULL,
+	sha256 varchar(64) NOT NULL,
+	etag varchar(128) NULL,
+	created_by uuid NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT storage_object_versions_pkey PRIMARY KEY (id),
+	CONSTRAINT uq_storage_object_versions UNIQUE (object_id, version_no),
+	CONSTRAINT storage_object_versions_blob_id_fkey FOREIGN KEY (blob_id) REFERENCES mcat2.storage_blobs(id) ON DELETE RESTRICT,
+	CONSTRAINT storage_object_versions_created_by_fkey FOREIGN KEY (created_by) REFERENCES mcat2.users(id) ON DELETE SET NULL,
+	CONSTRAINT storage_object_versions_object_id_fkey FOREIGN KEY (object_id) REFERENCES mcat2.storage_objects(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_storage_object_versions_object ON mcat2.storage_object_versions USING btree (object_id, version_no DESC);
+
+
+-- mcat2.upload_parts definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.upload_parts;
+
+CREATE TABLE mcat2.upload_parts (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	session_id uuid NOT NULL,
+	part_no int4 NOT NULL,
+	size_bytes int8 NOT NULL,
+	sha256 varchar(64) NOT NULL,
+	uploaded_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT upload_parts_pkey PRIMARY KEY (id),
+	CONSTRAINT uq_upload_parts UNIQUE (session_id, part_no),
+	CONSTRAINT upload_parts_session_id_fkey FOREIGN KEY (session_id) REFERENCES mcat2.upload_sessions(id) ON DELETE CASCADE
+);
+
+
+-- mcat2.documents definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.documents;
+
+CREATE TABLE mcat2.documents (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	workspace_id uuid NOT NULL,
+	object_id uuid NOT NULL,
+	version_id uuid NOT NULL,
+	doc_type mcat2."document_type" DEFAULT 'unknown'::mcat2.document_type NOT NULL,
+	title text NULL,
+	status varchar(20) DEFAULT 'ready'::character varying NOT NULL,
+	created_by uuid NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	updated_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT documents_pkey PRIMARY KEY (id),
+	CONSTRAINT uq_documents_object_version UNIQUE (object_id, version_id),
+	CONSTRAINT documents_created_by_fkey FOREIGN KEY (created_by) REFERENCES mcat2.users(id) ON DELETE SET NULL,
+	CONSTRAINT documents_object_id_fkey FOREIGN KEY (object_id) REFERENCES mcat2.storage_objects(id) ON DELETE RESTRICT,
+	CONSTRAINT documents_version_id_fkey FOREIGN KEY (version_id) REFERENCES mcat2.storage_object_versions(id) ON DELETE RESTRICT,
+	CONSTRAINT documents_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES mcat2.workspaces(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_documents_object ON mcat2.documents USING btree (object_id);
+CREATE INDEX idx_documents_workspace_created ON mcat2.documents USING btree (workspace_id, created_at DESC);
+
+
+-- mcat2.question_sources definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.question_sources;
+
+CREATE TABLE mcat2.question_sources (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	question_id uuid NOT NULL,
+	document_id uuid NULL,
+	page_no int4 NULL,
+	bbox jsonb NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT question_sources_pkey PRIMARY KEY (id),
+	CONSTRAINT question_sources_document_id_fkey FOREIGN KEY (document_id) REFERENCES mcat2.documents(id) ON DELETE SET NULL,
+	CONSTRAINT question_sources_question_id_fkey FOREIGN KEY (question_id) REFERENCES mcat2.questions(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_question_sources_document_page ON mcat2.question_sources USING btree (document_id, page_no);
+CREATE INDEX idx_question_sources_question ON mcat2.question_sources USING btree (question_id);
+
+
+-- mcat2.document_assets definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.document_assets;
+
+CREATE TABLE mcat2.document_assets (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	document_id uuid NOT NULL,
+	asset_type varchar(50) NOT NULL,
+	blob_id uuid NOT NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT document_assets_pkey PRIMARY KEY (id),
+	CONSTRAINT document_assets_blob_id_fkey FOREIGN KEY (blob_id) REFERENCES mcat2.storage_blobs(id) ON DELETE RESTRICT,
+	CONSTRAINT document_assets_document_id_fkey FOREIGN KEY (document_id) REFERENCES mcat2.documents(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_document_assets_doc_type ON mcat2.document_assets USING btree (document_id, asset_type);
+
+
+-- mcat2.document_jobs definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.document_jobs;
+
+CREATE TABLE mcat2.document_jobs (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	document_id uuid NOT NULL,
+	job_type varchar(50) NOT NULL,
+	status varchar(20) DEFAULT 'queued'::character varying NOT NULL,
+	progress int4 DEFAULT 0 NOT NULL,
+	message text NULL,
+	idempotency_key varchar(255) NULL,
+	attempt int4 DEFAULT 1 NOT NULL,
+	started_at timestamptz NULL,
+	finished_at timestamptz NULL,
+	error_detail jsonb NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	updated_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT document_jobs_pkey PRIMARY KEY (id),
+	CONSTRAINT document_jobs_document_id_fkey FOREIGN KEY (document_id) REFERENCES mcat2.documents(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_document_jobs_doc_status ON mcat2.document_jobs USING btree (document_id, status, created_at DESC);
+CREATE INDEX idx_document_jobs_status ON mcat2.document_jobs USING btree (status, created_at DESC);
+
+
+-- mcat2.document_pages definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.document_pages;
+
+CREATE TABLE mcat2.document_pages (
+	id uuid DEFAULT gen_random_uuid() NOT NULL,
+	document_id uuid NOT NULL,
+	page_no int4 NOT NULL,
+	width int4 NULL,
+	height int4 NULL,
+	preview_blob_id uuid NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT document_pages_pkey PRIMARY KEY (id),
+	CONSTRAINT uq_document_pages UNIQUE (document_id, page_no),
+	CONSTRAINT document_pages_document_id_fkey FOREIGN KEY (document_id) REFERENCES mcat2.documents(id) ON DELETE CASCADE,
+	CONSTRAINT document_pages_preview_blob_id_fkey FOREIGN KEY (preview_blob_id) REFERENCES mcat2.storage_blobs(id) ON DELETE SET NULL
+);
+CREATE INDEX idx_document_pages_doc ON mcat2.document_pages USING btree (document_id, page_no);
+
+
+-- mcat2.tests_request definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.tests_request;
+
+CREATE TABLE mcat2.tests_request (
+	id uuid NOT NULL,
+	created timestamp NOT NULL,
+	modified timestamp NOT NULL,
+	user_id uuid NULL,
+	request_type varchar(20) NOT NULL,
+	target_school_id uuid NULL,
+	target_exam_year int4 NULL,
+	target_exam_grade varchar(10) NULL,
+	target_exam_semester varchar(10) NULL,
+	target_exam_type varchar(20) NULL,
+	target_exam_month int4 NULL,
+	target_exam_option varchar(50) NULL,
+	target_exam_difficulty varchar(20) NULL,
+	target_style varchar(30) NULL,
+	target_problem_cnt int4 NULL,
+	target_depth4_order text NULL,
+	reference_source_id uuid NULL,
+	request_description text NULL,
+	result_description text NULL,
+	status varchar(20) NULL,
+	is_active bool DEFAULT true NOT NULL,
+	test_id uuid NULL,
+	target_exam_subject varchar(20) NULL,
+	CONSTRAINT tests_request_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.tests_test definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.tests_test;
+
+CREATE TABLE mcat2.tests_test (
+	id uuid NOT NULL,
+	created timestamp NOT NULL,
+	modified timestamp NOT NULL,
+	title varchar(100) NOT NULL,
+	test_type varchar(20) NOT NULL,
+	tags varchar(255) NULL,
+	description varchar(255) NULL,
+	answer_sheet_id uuid NULL,
+	solution_sheet_id uuid NULL,
+	problem_count int4 NULL,
+	problem_arrangement_type varchar(50) NULL,
+	creation_method varchar(20) NULL,
+	creation_type varchar(20) NULL,
+	creation_style varchar(30) NULL,
+	user_id uuid NULL,
+	creation_date timestamp NULL,
+	modified_log text NULL,
+	deleted timestamp NULL,
+	deleted_log text NULL,
+	is_active bool DEFAULT true NOT NULL,
+	request_id uuid NULL,
+	original_id uuid NULL,
+	original_version int4 NULL,
+	CONSTRAINT tests_test_pkey PRIMARY KEY (id)
+);
+CREATE INDEX idx_tests_test_original ON mcat2.tests_test USING btree (user_id, original_id, creation_style);
+
+
+-- mcat2.tests_test_with_problem definition
+
+-- Drop table
+
+-- DROP TABLE mcat2.tests_test_with_problem;
+
+CREATE TABLE mcat2.tests_test_with_problem (
+	id uuid NOT NULL,
+	created timestamp NOT NULL,
+	modified timestamp NOT NULL,
+	test_id uuid NOT NULL,
+	problem_id uuid NOT NULL,
+	problem_order int4 NOT NULL,
+	is_active bool DEFAULT true NOT NULL,
+	score float4 NULL,
+	CONSTRAINT tests_test_with_problem_pkey PRIMARY KEY (id)
+);
+
+
+-- mcat2.tests_request foreign keys
+
+ALTER TABLE mcat2.tests_request ADD CONSTRAINT tests_request_test_id_fkey FOREIGN KEY (test_id) REFERENCES mcat2.tests_test(id);
+
+
+-- mcat2.tests_test foreign keys
+
+ALTER TABLE mcat2.tests_test ADD CONSTRAINT tests_test_tests_request_fk FOREIGN KEY (request_id) REFERENCES mcat2.tests_request(id);
+
+
+-- mcat2.tests_test_with_problem foreign keys
+
+ALTER TABLE mcat2.tests_test_with_problem ADD CONSTRAINT tests_test_with_problem_test_id_fkey FOREIGN KEY (test_id) REFERENCES mcat2.tests_test(id);

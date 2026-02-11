@@ -13,3 +13,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 # Database Settings
 DB_URL = os.environ.get("DB_URL", "postgresql://db_member4:csm17csm17!@43.201.182.105:5432/tki")
+
+# Mathpix Settings (Optional)
+MATHPIX_APP_ID = os.environ.get("MATHPIX_APP_ID", "")
+MATHPIX_APP_KEY = os.environ.get("MATHPIX_APP_KEY", "")

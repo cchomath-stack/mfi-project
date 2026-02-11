@@ -20,3 +20,10 @@ Thumbs.db
 * copy.py
 *.sql
 *.bat
+
+venv/
+__pycache__/
+image_embedding/
+*.db
+*.sqlite3
+

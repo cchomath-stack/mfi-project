@@ -269,6 +269,7 @@ async function fetchStats() {
 
         const btn = document.getElementById('run-update-btn');
         const stopBtn = document.getElementById('stop-update-btn');
+        if (!stopBtn) console.warn("DEBUG: stop-update-btn not found in DOM!");
 
         if (btn) {
             if (d.update_in_progress) {

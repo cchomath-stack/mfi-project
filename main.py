@@ -14,6 +14,7 @@ import google.generativeai as genai
 import requests
 import httpx
 import time
+import base64
 from collections import defaultdict, deque
 from io import BytesIO
 from typing import List, Optional
@@ -192,7 +193,48 @@ def initialize_ocr():
     else:
         print("[OCR] Warning: Gemini API Key not set or initialization failed.")
 
+def get_mathpix_ocr(img_pil):
+    """Mathpix Snip API를 사용한 고성능 수식 OCR"""
+    if not config.MATHPIX_APP_ID or not config.MATHPIX_APP_KEY:
+        return None
+    try:
+        buffered = BytesIO()
+        img_pil.save(buffered, format="JPEG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        url = "https://api.mathpix.com/v3/text"
+        headers = {
+            "app_id": config.MATHPIX_APP_ID.strip().strip("'").strip('"'),
+            "app_key": config.MATHPIX_APP_KEY.strip().strip("'").strip('"'),
+            "Content-type": "application/json"
+        }
+        payload = {
+            "src": f"data:image/jpeg;base64,{img_base64}",
+            "formats": ["text"],
+            "data_options": {
+                "include_latex": True
+            }
+        }
+        
+        resp = requests.post(url, json=payload, headers=headers, timeout=15)
+        if resp.status_code == 200:
+            return resp.json().get("text", "").strip()
+        else:
+            print(f" [Mathpix Error] Status {resp.status_code}: {resp.text}")
+            return None
+    except Exception as e:
+        print(f" [Mathpix Utility Error] {e}")
+        return None
+
 def get_ocr_text(img_pil):
+    # 1. Mathpix 우선 시도 (키가 있는 경우)
+    if config.MATHPIX_APP_ID and config.MATHPIX_APP_KEY:
+        mx_text = get_mathpix_ocr(img_pil)
+        if mx_text:
+            print(f"  > [OCR] Mathpix Success (LaTeX Quality: High)")
+            return mx_text
+
+    # 2. Gemini 백업 시도
     if model_gemini is None:
         return ""
     try:

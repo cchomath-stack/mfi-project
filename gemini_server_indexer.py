@@ -10,6 +10,8 @@ import google.generativeai as genai
 from transformers import CLIPProcessor, CLIPModel
 from concurrent.futures import ThreadPoolExecutor
 import traceback
+import base64
+import json
 
 # 환경변수 클렌징
 def get_env_safe(key, default=""):
@@ -20,6 +22,9 @@ GEMINI_API_KEY = get_env_safe("GEMINI_API_KEY")
 DB_URL = get_env_safe("DB_URL", "postgresql://db_member4:csm17csm17!@43.201.182.105:5432/tki")
 MODEL_ID = "openai/clip-vit-base-patch32"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+MATHPIX_APP_ID = get_env_safe("MATHPIX_APP_ID")
+MATHPIX_APP_KEY = get_env_safe("MATHPIX_APP_KEY")
 
 # Gemini 초기화
 try:
@@ -62,6 +67,32 @@ def download_and_preprocess(row):
         # 에러 발생 시 qid만이라도 반환 (필터링 위함)
         q = str(row[0]) if row and len(row) > 0 else "unknown"
         return q, None, None
+
+def get_mathpix_ocr_standalone(img_pil):
+    if not MATHPIX_APP_ID or not MATHPIX_APP_KEY:
+        return None
+    try:
+        buffered = BytesIO()
+        img_pil.save(buffered, format="JPEG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        url = "https://api.mathpix.com/v3/text"
+        headers = {
+            "app_id": MATHPIX_APP_ID.strip().strip("'").strip('"'),
+            "app_key": MATHPIX_APP_KEY.strip().strip("'").strip('"'),
+            "Content-type": "application/json"
+        }
+        payload = {
+            "src": f"data:image/jpeg;base64,{img_base64}",
+            "formats": ["text"],
+            "data_options": {"include_latex": True}
+        }
+        resp = requests.post(url, json=payload, headers=headers, timeout=15)
+        if resp.status_code == 200:
+            return resp.json().get("text", "").strip()
+        return None
+    except Exception:
+        return None
 
 def run_server_indexing():
     processed_count = 0
@@ -151,15 +182,19 @@ def run_server_indexing():
                 # 최대 3회 재시도 (할당량 초과 시 대기)
                 for attempt in range(3):
                     try: 
-                        prompt = """수학 전문가로서 이 이미지의 모든 수학적 내용과 텍스트를 인식해줘.
+                        # 1. Mathpix 우선 시도
+                        ocr_text = get_mathpix_ocr_standalone(imgs[i])
+                        
+                        # 2. 실패 시 Gemini 백업
+                        if not ocr_text:
+                            prompt = """수학 전문가로서 이 이미지의 모든 수학적 내용과 텍스트를 인식해줘.
 규칙:
 1. 모든 수학 공식, 기호, 숫자는 반드시 LaTeX 형식($...$ 또는 $$...$$)으로 작성해. (예: $x^2 + y^2 = r^2$, $\frac{1}{2}$ 등)
 2. 한글 문장과 단어도 빠짐없이 정확하게 읽어줘.
 3. 다른 설명 없이 인식된 결과(LaTeX가 포함된 텍스트)만 출력해."""
-                        image_part = {"mime_type": "image/jpeg", "data": raw_data}
-                        
-                        response = model_gemini.generate_content([prompt, image_part])
-                        ocr_text = response.text.strip() if response and response.text else ""
+                            image_part = {"mime_type": "image/jpeg", "data": raw_data}
+                            response = model_gemini.generate_content([prompt, image_part])
+                            ocr_text = response.text.strip() if response and response.text else ""
                         
                         # DB 저장
                         cur_u.execute("""
