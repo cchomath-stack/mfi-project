@@ -274,10 +274,16 @@ async function fetchStats() {
         if (btn) {
             if (d.update_in_progress) {
                 btn.innerText = "업데이트 진행 중..."; btn.disabled = true;
-                if (stopBtn) stopBtn.classList.remove('hidden');
+                if (stopBtn) {
+                    stopBtn.classList.remove('hidden');
+                    stopBtn.style.display = 'block'; // 강제 표시
+                }
             } else {
                 btn.innerText = "지금 업데이트 시작하기"; btn.disabled = false;
-                if (stopBtn) stopBtn.classList.add('hidden');
+                if (stopBtn) {
+                    stopBtn.classList.add('hidden');
+                    stopBtn.style.display = 'none'; // 강제 숨김
+                }
             }
         }
 
