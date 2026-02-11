@@ -410,6 +410,14 @@ async def run_update(background_tasks: BackgroundTasks, current_user: dict = Dep
     background_tasks.add_task(background_update_embeddings)
     return {"message": "Started"}
 
+@app.post("/admin/stop-update")
+async def stop_update(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin": raise HTTPException(status_code=403)
+    global update_in_progress
+    if not update_in_progress: return {"message": "Not running"}
+    update_in_progress = False
+    return {"message": "Stopping"}
+
 from concurrent.futures import ThreadPoolExecutor
 
 def background_update_embeddings():
@@ -486,15 +494,29 @@ def background_update_embeddings():
             conn_s = get_db_conn(); cur_s = conn_s.cursor()
             
             for i, qid in enumerate(qids):
+                # 루프 도중 중단 체크
+                if not update_in_progress: break
+                
                 img = imgs[i]
                 emb = all_embs[i]
                 t_ocr = time.time()
-                try: 
-                    ocr_text = get_ocr_text(img)
-                    print(f"  > OCR Result ({qid[:8]} | {time.time()-t_ocr:.2f}s): {ocr_text[:30]}...")
-                except Exception as o_e:
-                    print(f"  > OCR Error ({qid[:8]}): {o_e}")
-                    ocr_text = ""
+                ocr_text = ""
+                
+                # 최대 3회 재시도 (할당량 초과 시 대응)
+                for attempt in range(3):
+                    try: 
+                        ocr_text = get_ocr_text(img)
+                        print(f"  > OCR Result ({qid[:8]} | {time.time()-t_ocr:.2f}s): {ocr_text[:30]}...")
+                        break # 성공 시 탈출
+                    except Exception as o_e:
+                        err_str = str(o_e).lower()
+                        if "429" in err_str or "quota" in err_str or "limit" in err_str:
+                            wait_sec = 30 * (attempt + 1)
+                            print(f"  > [Quota Error] Redrying in {wait_sec}s... ({qid[:8]})")
+                            time.sleep(wait_sec)
+                        else:
+                            print(f"  > [OCR Error] {qid[:8]}: {o_e}")
+                            break # 일반 에러는 중단
 
                 # 4. DB 저장
                 cur_s.execute("""
@@ -503,6 +525,9 @@ def background_update_embeddings():
                     SET image_embedding=EXCLUDED.image_embedding, ocr_text=EXCLUDED.ocr_text, updated_at=NOW()
                 """, (qid, emb.tolist(), ocr_text))
                 processed_in_session += 1
+                
+                # 무료 티어 배려 (간격 조정)
+                time.sleep(1.0)
 
             conn_s.commit(); cur_s.close(); conn_s.close()
             print(f"  [Batch Total Time] {time.time()-batch_start:.2f}s (Avg: {(time.time()-batch_start)/len(qids):.2f}s/item)")

@@ -44,8 +44,12 @@ body::before {
     flex-direction: column;
 }
 
-.hidden {
-    display: none !important;
+.mt-10 {
+    margin-top: 10px !important;
+}
+
+.mt-20 {
+    margin-top: 20px !important;
 }
 
 .glass-card {
@@ -211,6 +215,29 @@ input:focus {
 .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
+}
+
+.btn-danger {
+    width: 100%;
+    padding: 1rem;
+    background: var(--error);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-large {
+    font-size: 1.1rem;
+    padding: 1.2rem;
 }
 
 /* Landing Choice */

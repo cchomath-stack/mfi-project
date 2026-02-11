@@ -122,6 +122,7 @@ function setupEventListeners() {
 
     document.getElementById('search-btn').addEventListener('click', runSearch);
     document.getElementById('run-update-btn').addEventListener('click', runUpdate);
+    document.getElementById('stop-update-btn').addEventListener('click', runStopUpdate);
 
     // ★ 모달 이벤트 초기화 (is-visible 기반)
     const modal = document.getElementById('image-modal');
@@ -267,11 +268,15 @@ async function fetchStats() {
         if (elLast) elLast.innerText = d.last_updated;
 
         const btn = document.getElementById('run-update-btn');
+        const stopBtn = document.getElementById('stop-update-btn');
+
         if (btn) {
             if (d.update_in_progress) {
                 btn.innerText = "업데이트 진행 중..."; btn.disabled = true;
+                if (stopBtn) stopBtn.classList.remove('hidden');
             } else {
                 btn.innerText = "지금 업데이트 시작하기"; btn.disabled = false;
+                if (stopBtn) stopBtn.classList.add('hidden');
             }
         }
 
@@ -332,6 +337,29 @@ async function runUpdate() {
     } catch (e) {
         console.error("RunUpdate Failure:", e);
         btn.disabled = false; btn.innerText = "지금 업데이트 시작하기";
+    }
+}
+
+async function runStopUpdate() {
+    const btn = document.getElementById('stop-update-btn');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.innerText = "중단 요청 중...";
+    try {
+        const res = await fetch('/admin/stop-update', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+            console.log("Stop request sent.");
+            await fetchStats();
+        } else {
+            alert("중단 요청에 실패했습니다.");
+            btn.disabled = false; btn.innerText = "업데이트 중단하기";
+        }
+    } catch (e) {
+        console.error("StopUpdate Failure:", e);
+        btn.disabled = false; btn.innerText = "업데이트 중단하기";
     }
 }
 
