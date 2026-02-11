@@ -201,7 +201,11 @@ def get_ocr_text(img_pil):
         img_pil.save(buffered, format="JPEG")
         img_bytes = buffered.getvalue()
         
-        prompt = "이 수학 문제 이미지의 모든 텍스트를 한글로 정확히 읽어줘. 수학 공식은 반드시 LaTeX 형식($...$)을 사용해줘. 다른 설명은 하지 말고 인식된 텍스트만 출력해."
+        prompt = """수학 전문가처럼 이 이미지 속의 모든 텍스트를 읽어줘.
+규칙:
+1. 모든 수학 공식과 기호는 반드시 LaTeX 형식($...$ 또는 $$...$$)으로 작성해.
+2. 한글 텍스트도 빠짐없이 정확하게 포함해.
+3. 결과물에 다른 부연 설명이나 코멘트 없이 인식된 텍스트만 깔끔하게 출력해."""
         image_part = {"mime_type": "image/jpeg", "data": img_bytes}
         
         response = model_gemini.generate_content([prompt, image_part])
