@@ -438,13 +438,14 @@ async def get_update_stats(current_user: dict = Depends(get_current_user)):
     try:
         conn = get_db_conn(); cur = conn.cursor()
         # 완료수: 신규 테이블(question_image_embeddings)에 등록된 수
-        cur.execute("SELECT COUNT(*) FROM mcat2.question_image_embeddings")
+        # 완료수: 임베딩과 OCR이 모두 정상적으로 완료된 수만 'Done'으로 표시
+        cur.execute("SELECT COUNT(*) FROM mcat2.question_image_embeddings WHERE ocr_text IS NOT NULL AND ocr_text != ''")
         done = cur.fetchone()[0]
         # 전체수: question_render 테이블의 전체 유효 문항 수
         cur.execute("SELECT COUNT(*) FROM mcat2.question_render WHERE preview_url IS NOT NULL AND preview_url != ''")
         total_p = cur.fetchone()[0]
         pending = max(0, total_p - done)
-        cur.execute("SELECT MAX(updated_at) FROM mcat2.question_image_embeddings")
+        cur.execute("SELECT MAX(updated_at) FROM mcat2.question_image_embeddings WHERE ocr_text IS NOT NULL AND ocr_text != ''")
         ldt = cur.fetchone()[0]
         cur.close(); conn.close()
 

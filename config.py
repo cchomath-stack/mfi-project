@@ -11,6 +11,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "antigravity_secret_key_change_in_prod
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
+# Gemini API Key (for Fallback OCR)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyDnisyhhNhvToH8qk8wfOrAmalddscsbno")
+
 # Database Settings
 DB_URL = os.environ.get("DB_URL", "postgresql://db_member4:csm17csm17!@43.201.182.105:5432/tki")
 
