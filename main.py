@@ -520,10 +520,9 @@ def background_update_embeddings():
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
                 WHERE (e.question_id IS NULL OR e.ocr_text IS NULL OR e.ocr_text = '' OR e.ocr_text LIKE '%%?%%')
                   AND q.preview_url IS NOT NULL AND q.preview_url != ''
-                  AND q.question_id::text NOT IN %s
                 ORDER BY q.updated_at DESC
                 LIMIT 10
-            """, (tuple(processed_ids or ['none']),))
+            """)
             rows = cur.fetchall(); cur.close(); conn.close()
             
             if not rows:
@@ -642,11 +641,11 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
         top = scores[:5]; ids = [s[0] for s in top]
         
         conn = get_db_conn(); cur = conn.cursor()
-        # question_render와 user_extracted_questions를 조인하여 메타데이터 추출
+        # question_render와 questions 테이블을 조인하여 실제 출처 파일명(origin_file_name) 추출
         cur.execute("""
-            SELECT q.question_id, q.preview_url, COALESCE(u.source, 'Unknown Source')
+            SELECT q.question_id, q.preview_url, COALESCE(qt.origin_file_name, 'Unknown Source')
             FROM mcat2.question_render q
-            LEFT JOIN mcat2.user_extracted_questions u ON q.question_id::text = u.question_id
+            LEFT JOIN mcat2.questions qt ON q.question_id = qt.id
             WHERE q.question_id = ANY(%s::uuid[])
         """, (ids,))
         
