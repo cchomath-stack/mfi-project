@@ -515,16 +515,35 @@ def background_update_embeddings():
             
             log_backend(" [Task] Fetching next batch of 10 items...")
             conn = get_db_conn(); cur = conn.cursor()
+            # session에서 이미 처리한 ID는 SQL에서 제외하지 않고 가져온 뒤 파이썬에서 필터링하거나, 
+            # 단순히 DB 상태(null인 것들)만 믿고 가져옵니다. 
+            # 루프 방지를 위해 ORDER BY와 OFFSET을 적절히 쓰거나, 
+            # 단순히 처리 완료된 것은 WHERE 조건에서 빠지게 되므로 NOT IN을 뺍니다.
             cur.execute("""
                 SELECT q.question_id, q.preview_url FROM mcat2.question_render q
                 LEFT JOIN mcat2.question_image_embeddings e ON q.question_id = e.question_id
                 WHERE (e.question_id IS NULL OR e.ocr_text IS NULL OR e.ocr_text = '')
                   AND q.preview_url IS NOT NULL AND q.preview_url != ''
-                  AND q.question_id::text NOT IN %s
                 ORDER BY q.updated_at DESC
-                LIMIT 10
-            """, (tuple(processed_ids or ['none']),))
+                LIMIT 100
+            """)
             rows = cur.fetchall(); cur.close(); conn.close()
+            
+            if not rows:
+                log_backend(" [Task] No more pending items found. Finishing.")
+                break
+
+            # 이미 이번 세션에서 시도했던 ID는 제외 (SQL bloat 방지용 파이썬 필터링)
+            pending_rows = [r for r in rows if str(r[0]) not in processed_ids][:10]
+            
+            if not pending_rows:
+                log_backend(" [Task] All fetched items already processed this session. Finishing to avoid loop.")
+                break
+
+            log_backend(f" [Batch] Processing {len(pending_rows)} items...")
+            
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), pending_rows))
             
             if not rows:
                 log_backend(" [Task] No more pending items found. Finishing.")
