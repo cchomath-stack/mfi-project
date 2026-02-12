@@ -545,15 +545,6 @@ def background_update_embeddings():
             with ThreadPoolExecutor(max_workers=5) as executor:
                 results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), pending_rows))
             
-            if not rows:
-                log_backend(" [Task] No more pending items found. Finishing.")
-                break
-
-            log_backend(f" [Batch] Processing {len(rows)} items...")
-            
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                results = list(executor.map(lambda r: download_and_preprocess(r[0], r[1]), rows))
-            
             valid_items = [(qid, img) for qid, img in results if img is not None]
             if not valid_items:
                 # 다음 번 시도를 위해 처리 완료 목록에는 넣어야 함 (무한 루프 방지)
