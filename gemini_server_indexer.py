@@ -12,30 +12,21 @@ from concurrent.futures import ThreadPoolExecutor
 import traceback
 import base64
 import json
+import config
 
-# 환경변수 클렌징
-def get_env_safe(key, default=""):
-    val = os.getenv(key, default)
-    return val.strip().strip("'").strip('"') if val else default
-
-GEMINI_API_KEY = get_env_safe("GEMINI_API_KEY")
-DB_URL = get_env_safe("DB_URL", "postgresql://db_member4:csm17csm17!@43.201.182.105:5432/tki")
-MODEL_ID = "openai/clip-vit-base-patch32"
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-MATHPIX_APP_ID = get_env_safe("MATHPIX_APP_ID")
-MATHPIX_APP_KEY = get_env_safe("MATHPIX_APP_KEY")
 
 # Gemini 초기화
 try:
-    genai.configure(api_key=GEMINI_API_KEY)
-    # 가용 목록에서 확인된 최신 모델 gemini-2.0-flash로 교체
+    genai.configure(api_key=config.GEMINI_API_KEY)
     model_gemini = genai.GenerativeModel('gemini-2.0-flash')
 except Exception as e:
     print(f"!!! Gemini Initialization Error: {e}")
     exit(1)
 
 # CLIP 초기화
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+MODEL_ID = "openai/clip-vit-base-patch32"
+
 print(f">>> [System] Loading CLIP on {DEVICE}...")
 try:
     clip_model = CLIPModel.from_pretrained(MODEL_ID).to(DEVICE)
@@ -45,7 +36,7 @@ except Exception as e:
     exit(1)
 
 def get_db_conn():
-    return psycopg2.connect(DB_URL)
+    return psycopg2.connect(config.DB_URL)
 
 def download_and_preprocess(row):
     """안전한 다운로드 및 전처리"""
@@ -78,8 +69,8 @@ def get_mathpix_ocr_standalone(img_pil):
         
         url = "https://api.mathpix.com/v3/text"
         headers = {
-            "app_id": MATHPIX_APP_ID.strip().strip("'").strip('"'),
-            "app_key": MATHPIX_APP_KEY.strip().strip("'").strip('"'),
+            "app_id": config.MATHPIX_APP_ID.strip().strip("'").strip('"'),
+            "app_key": config.MATHPIX_APP_KEY.strip().strip("'").strip('"'),
             "Content-type": "application/json"
         }
         payload = {
@@ -93,16 +84,10 @@ def get_mathpix_ocr_standalone(img_pil):
         return None
     except Exception:
         return None
-
 def run_server_indexing():
     processed_count = 0
     batch_size = 10 
     
-    # 1. 시동 전 환경 체크
-    if not GEMINI_API_KEY or "YOUR_GEMINI" in GEMINI_API_KEY:
-        print("!!! [Error] GEMINI_API_KEY가 설정되지 않았습니다. .env 파일을 확인해주세요.")
-        return
-
     try:
         # 진행률 파악
         conn = get_db_conn(); cur = conn.cursor()
