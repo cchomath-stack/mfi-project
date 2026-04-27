@@ -655,8 +655,8 @@ async def search(file: UploadFile = File(...), current_user: dict = Depends(get_
         # question_render와 questions 테이블을 조인하여 실제 출처 파일명(origin_file_name) 추출
         cur.execute("""
             SELECT q.question_id, q.preview_url, COALESCE(qt.origin_file_name, 'Unknown Source')
-            FROM mcat2.question_render q
-            LEFT JOIN mcat2.questions qt ON q.question_id = qt.id
+            FROM mcat2.question_render_old q
+            LEFT JOIN mcat2.questions_old qt ON q.question_id = qt.id
             WHERE q.question_id = ANY(%s::uuid[])
         """, (ids,))
         
